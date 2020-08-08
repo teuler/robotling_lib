@@ -30,19 +30,19 @@
 # THE SOFTWARE.
 # ----------------------------------------------------------------------------
 import time
-from misc.helpers import timed_function
+from robotling_lib.misc.helpers import timed_function
 from micropython import const
 
-from platform.platform import platform
+from robotling_lib.platform.platform import platform
 if (platform.ID == platform.ENV_ESP32_UPY or
     platform.ID == platform.ENV_ESP32_TINYPICO):
-  from platform.esp32.register import i2c_bit, i2c_bits
-  from platform.esp32.register.i2c_struct import UnaryStruct
-  from platform.esp32.register.i2c_struct_array import StructArray
+  from robotling_lib.platform.esp32.register import i2c_bit, i2c_bits
+  from robotling_lib.platform.esp32.register.i2c_struct import UnaryStruct
+  from robotling_lib.platform.esp32.register.i2c_struct_array import StructArray
 elif platform.ID == platform.ENV_CPY_SAM51:
-  from platform.m4ex.circuitpython.register import i2c_bit, i2c_bits
-  from platform.m4ex.circuitpython.i2c_struct import UnaryStruct
-  from platform.m4ex.circuitpython.i2c_struct_array import StructArray
+  from robotling_lib.platform.m4ex.circuitpython.register import i2c_bit, i2c_bits
+  from robotling_lib.platform.m4ex.circuitpython.i2c_struct import UnaryStruct
+  from robotling_lib.platform.m4ex.circuitpython.i2c_struct_array import StructArray
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
 

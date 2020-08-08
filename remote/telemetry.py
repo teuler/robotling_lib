@@ -18,7 +18,7 @@ import network
 import ujson
 import errno
 from umqtt.robust import MQTTClient
-from misc.helpers import timed_function
+from robotling_lib.misc.helpers import timed_function
 
 __version__ = "0.1.2.0"
 

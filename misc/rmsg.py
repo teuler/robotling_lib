@@ -15,8 +15,8 @@ try:
   import select
   import array
   from micropython import const
-  from misc.helpers import timed_function
-  from platform.platform import platform
+  from robotling_lib.misc.helpers import timed_function
+  from robotling_lib.platform.platform import platform
   if (platform.ID == platform.ENV_ESP32_UPY or
       platform.ID == platform.ENV_ESP32_TINYPICO):
     from machine import UART

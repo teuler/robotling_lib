@@ -32,8 +32,8 @@
 # THE SOFTWARE.
 # ----------------------------------------------------------------------------
 from micropython import const
-from misc.helpers import timed_function
-from sensors.sensor_base import SensorBase
+from robotling_lib.misc.helpers import timed_function
+from robotling_lib.sensors.sensor_base import SensorBase
 
 __version__ = "0.1.1.0"
 CHIP_NAME   = "VL6180X"

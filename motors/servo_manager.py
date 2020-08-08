@@ -9,12 +9,12 @@
 # ----------------------------------------------------------------------------
 import array
 import time
-from misc.helpers import timed_function
+from robotling_lib.misc.helpers import timed_function
 
-from platform.platform import platform
+from robotling_lib.platform.platform import platform
 if (platform.ID == platform.ENV_ESP32_UPY or
     platform.ID == platform.ENV_ESP32_TINYPICO):
-  import platform.esp32.dio as dio
+  import robotling_lib.platform.esp32.dio as dio
   from machine import Timer
   import ulab as np
   from micropython import alloc_emergency_exception_buf

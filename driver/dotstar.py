@@ -33,14 +33,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # ----------------------------------------------------------------------------
-from platform.platform import platform
+from robotling_lib.platform.platform import platform
 if (platform.ID == platform.ENV_ESP32_UPY or
     platform.ID == platform.ENV_ESP32_TINYPICO):
-  import platform.esp32.dio as dio
-  import platform.esp32.busio as busio
+  import robotling_lib.platform.esp32.dio as dio
+  import robotling_lib.platform.esp32.busio as busio
 elif platform.ID == platform.ENV_CPY_SAM51:
-  import platform.m4ex.dio as dio
-  import platform.m4ex.busio as busio
+  import robotling_lib.platform.m4ex.dio as dio
+  import robotling_lib.platform.m4ex.busio as busio
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
 

@@ -15,7 +15,7 @@
 #
 # ----------------------------------------------------------------------------
 import blob
-from sensors.sensor_base import CameraBase
+from robotling_lib.sensors.sensor_base import CameraBase
 
 __version__ = "0.1.1.0"
 

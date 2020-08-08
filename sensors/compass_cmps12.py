@@ -17,8 +17,8 @@ except ImportError:
   import ustruct as struct
 from math import radians
 from micropython import const
-from misc.helpers import timed_function
-from sensors.sensor_base import SensorBase
+from robotling_lib.misc.helpers import timed_function
+from robotling_lib.sensors.sensor_base import SensorBase
 import robotling_board as rb
 
 __version__ = "0.1.1.0"

@@ -29,8 +29,8 @@ import time
 import array
 import robotling_board as rb
 from math import pi, sin, cos, asin, acos, atan2, sqrt
-from sensors.sensor_base import SensorBase
-from misc.helpers import timed_function
+from robotling_lib.sensors.sensor_base import SensorBase
+from robotling_lib.misc.helpers import timed_function
 
 __version__ = "0.1.1.2"
 

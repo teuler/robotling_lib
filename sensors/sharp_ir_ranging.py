@@ -11,7 +11,7 @@
 # ----------------------------------------------------------------------------
 import array
 from math import exp
-from sensors.sensor_base import SensorBase
+from robotling_lib.sensors.sensor_base import SensorBase
 
 __version__ = "0.1.1.0"
 CHIP_NAME_0 = "GP2Y0A41SK0F"  # 4 to 30 cm
