@@ -28,7 +28,10 @@ I2C_FRQ   = const(400000)
 # ----------------------------------------------------------------------------
 # Robotling/Hexapod board connections/pins
 #
+print("BOARD_VER")
 if platform.ID == platform.ENV_ESP32_UPY:
+  print(platform.ID)
+
   if BOARD_VER == 100:
     from robotling_lib.platform.board_robotling_1_0_huzzah32 import *
   elif BOARD_VER >= 110 and BOARD_VER < 200:
@@ -36,6 +39,7 @@ if platform.ID == platform.ENV_ESP32_UPY:
   elif BOARD_VER == 200:
     from robotling_lib.platform.board_robotling_2_0_huzzah32 import *
   else:
+    print("HERE")
     from robotling_lib.platform.board_none_huzzah32 import *
 
 elif platform.ID == platform.ENV_ESP32_TINYPICO:
