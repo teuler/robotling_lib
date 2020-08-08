@@ -28,10 +28,8 @@ I2C_FRQ   = const(400000)
 # ----------------------------------------------------------------------------
 # Robotling/Hexapod board connections/pins
 #
-print("BOARD_VER")
 if platform.ID == platform.ENV_ESP32_UPY:
-  print(platform.ID)
-
+  # HUZZAH32 ESP32 board w/MicroPython
   if BOARD_VER == 100:
     from robotling_lib.platform.board_robotling_1_0_huzzah32 import *
   elif BOARD_VER >= 110 and BOARD_VER < 200:
@@ -39,17 +37,20 @@ if platform.ID == platform.ENV_ESP32_UPY:
   elif BOARD_VER == 200:
     from robotling_lib.platform.board_robotling_2_0_huzzah32 import *
   else:
-    print("HERE")
     from robotling_lib.platform.board_none_huzzah32 import *
 
 elif platform.ID == platform.ENV_ESP32_TINYPICO:
+  # TinyPICO ESP32 board w/MicroPython
   from robotling_lib.platform.board_hexapod_0_3_tinypico import *
 
 elif platform.ID == platform.ENV_CPY_SAM51:
+  # SAM51 board w/CircuitPython
   from robotling_lib.platform.board_robotling_1_3_sam51 import *
+  print("SAM")
 
 else:
-  assert False, "No matching board found"
+  # No fitting board found or wtong board version number
+  assert False, "No fitting board found"
 
 # ----------------------------------------------------------------------------
 # The battery is connected to the pin via a voltage divider (1/2), and thus
