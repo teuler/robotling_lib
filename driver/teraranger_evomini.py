@@ -9,9 +9,10 @@
 # ----------------------------------------------------------------------------
 import select
 import array
+from time import sleep_ms
 from machine import UART
 from micropython import const
-from misc.helpers import timed_function
+from robotling_lib.misc.helpers import timed_function
 
 try:
   import struct
@@ -56,25 +57,25 @@ class TeraRangerEvoMini:
 
     # Set pixel mode and prepare buffer
     if self._nPix == 4:
-      uart.write(_TERA_PIX_MODE_4)
+      self._uart.write(_TERA_PIX_MODE_4)
     elif self._nPix == 2:
-      uart.write(_TERA_PIX_MODE_2)
+      self._uart.write(_TERA_PIX_MODE_2)
     else:
       self._nPix = 1
-      uart.write(_TERA_PIX_MODE_1)
+      self._uart.write(_TERA_PIX_MODE_1)
     sleep_ms(_TERA_CMD_WAIT_MS)
     self._nBufExp = _nPix*2 +2
     self._dist = array.array("i", [0]*self._nPix)
 
     # Set binary mode for results
-    uart.write(TERA_OUT_MODE_BIN)
+    self._uart.write(_TERA_OUT_MODE_BIN)
     sleep_ms(_TERA_CMD_WAIT_MS)
 
     # Set distance mode
     if self._short:
-      uart.write(TERA_RANGE_SHORT)
+      self._uart.write(_TERA_RANGE_SHORT)
     else:
-      uart.write(TERA_RANGE_LONG)
+      self._uart.write(_TERA_RANGE_LONG)
     sleep_ms(_TERA_CMD_WAIT_MS)
 
     # Prepare polling construct
@@ -92,15 +93,15 @@ class TeraRangerEvoMini:
       self._isReady == False
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  def _update(self):
+  def update(self):
     """ Update distance reading(s)
     """
     if self._uart is not None:
       # UART seems to be ready ...
-      np = self_nPix
-      self.poll.poll(TERA_POLL_WAIT_MS)
+      np = self._nPix
+      self._poll.poll(TERA_POLL_WAIT_MS)
       buf = self._uart.readline()
-      if buf and len(buf) == self.nBufExp and buf[0] == _TERA_START_CHR:
+      if buf and len(buf) == self._nBufExp and buf[0] == _TERA_START_CHR:
         # Is valid buffer
         if np == 4:
           self._dist = struct.unpack_from('>HHHH', buf[1:9])
