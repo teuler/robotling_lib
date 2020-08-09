@@ -12,6 +12,7 @@
 from os import uname
 from machine import SPI, Pin, I2C
 from micropython import const
+from machine import UART
 
 __version__ = "0.1.1.0"
 
@@ -87,5 +88,24 @@ class I2CBus(object):
                           in_start=0, in_end=None, stop_=True):
     self._i2c.writeto(addr, bufo[out_start:out_end], stop_)
     self._i2c.readfrom_into(addr, bufi[in_start:in_end])
+
+# ----------------------------------------------------------------------------
+'''
+class UART(object):
+  """UART."""
+
+  def __init__(self, id=1, baudrate=9600, bits=8, parity=None, stop=1, tx=17,
+               rx=16, rts=-1, cts=-1, txbuf=256, rxbuf=256, timeout=0,
+               timeout_char=2):
+    self._uart = UART(id, baudrate, bits, parity, stop, tx, rx, rts, cts,
+                      txbuf, rxbuf, timeout, timeout_char)
+
+  def any(self):
+    return self._uart.any()
+
+  def deinit(self):
+    if self._uart is not None:
+      self._uart.deinit()
+'''
 
 # ----------------------------------------------------------------------------
