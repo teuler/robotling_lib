@@ -10,7 +10,6 @@
 import select
 import array
 from time import sleep_ms
-from machine import UART
 from micropython import const
 from robotling_lib.misc.helpers import timed_function
 
@@ -18,6 +17,14 @@ try:
   import struct
 except ImportError:
   import ustruct as struct
+
+from robotling_lib.platform.platform import platform
+if platform.ID == platform.ENV_ESP32_UPY:
+  from robotling_lib.platform.esp32.busio import UART
+elif platform.ID == platform.ENV_CPY_SAM51:
+  from robotling_lib.platform.m4ex.busio import UART
+else:
+  print("ERROR: No matching hardware libraries in `platform`.")
 
 __version__ = "0.1.0.0"
 CHIP_NAME   = "tera_evomini"

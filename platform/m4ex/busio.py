@@ -7,11 +7,12 @@
 # The MIT License (MIT)
 # Copyright (c) 2018 Thomas Euler
 # 2018-12-09, v1
+# 2020-08-09, v1.1 - `UART` is inherited from `busio`
 # ----------------------------------------------------------------------------
 from micropython import const
-from busio import SPI, I2C
+from busio import SPI, I2C, UART
 
-__version__ = "0.1.0.0"
+__version__ = "0.1.1.0"
 
 # ----------------------------------------------------------------------------
 class SPIBus(object):
@@ -77,5 +78,24 @@ class I2CBus(object):
         self._i2c.readfrom_into(addr, buf)
       finally:
         self._i2c.unlock()
+
+# ----------------------------------------------------------------------------
+'''
+class UART(object):
+  """UART."""
+
+  def __init__(self, id=1, baudrate=9600, bits=8, parity=None, stop=1, tx=17,
+               rx=16, rts=-1, cts=-1, txbuf=256, rxbuf=256, timeout=0,
+               timeout_char=2):
+    self._uart = UART(id, baudrate, bits, parity, stop, tx, rx, rts, cts,
+                      txbuf, rxbuf, timeout, timeout_char)
+
+  def any(self):
+    return self._uart.any()
+
+  def deinit(self):
+    if self._uart is not None:
+      self._uart.deinit()
+'''
 
 # ----------------------------------------------------------------------------

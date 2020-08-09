@@ -37,7 +37,7 @@ from robotling_lib.motors.servo_base import ServoBase
 from robotling_lib.platform.platform import platform
 if (platform.ID == platform.ENV_ESP32_UPY or
     platform.ID == platform.ENV_ESP32_TINYPICO):
-  from machine import UART
+  from robotling_lib.platform.esp32.busio import UART
 elif platform.ID == platform.ENV_CPY_SAM51:
   pass
 else:
