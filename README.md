@@ -5,18 +5,18 @@ For an overview of some of the supported hardware, see ["Sensoren etc."](https:/
 
 > Note: _Some of the drivers (e.g. [TeraRanger Evo Mini](https://www.terabee.com/shop/lidar-tof-range-finders/teraranger-evo-mini/), which requires an UART port to access its full functionality) are not compatible to the current robotling board._
 
-## Repository-Struktur 
+## Structure of this repository
 
 ```
-├───driver                 - Treiber für ICs und Module auf der Platine 
-├───misc                   - Hilfsfunktionen und -Klassen
-├───motors                 - Motor- und Servokontroller-Klassen
-├───platform               - Klassen für Plattformunabhängigkeit
-│   ├───esp32              - für ESP32 based modules, e.g. HUZZAH32, TinyPICO
-|   |   └───register       - Register-Klassen (wie in CircuitPython)        
-│   └───m4ex               - für Adafruit Feather M4 Express
+├───driver                 - Drivers for ICs and break-out modules on the board
+├───misc                   - Support functions and classes
+├───motors                 - Motor and servo controller classes
+├───platform               - Support for different platforms
+│   ├───esp32              - For ESP32 based modules, e.g. HUZZAH32, TinyPICO
+|   |   └───register       - Register classes (like in CircuitPython)        
+│   └───m4ex               - For Adafruit Feather M4 Express
 │       └───circuitpython     
 │           └───register
-├───remote                 - MQTT-Telemetry, BLE-Unterstützung (ESP32) 
-└───sensors                - Sensor-Klassen 
+├───remote                 - MQTT telemetry, BLE support (ESP32 only) 
+└───sensors                - Sensor classes 
 ```
