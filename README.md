@@ -3,6 +3,8 @@
 
 For an overview of some of the supported hardware, see ["Sensoren etc."](https://github.com/teuler/robotling/wiki/Sensoren-etc) (in German).
 
+> Note: _Some of the drivers (e.g. [TeraRanger Evo Mini](https://www.terabee.com/shop/lidar-tof-range-finders/teraranger-evo-mini/), which requires an UART port to access its full functionality) are not compatible to the current robotling board._
+
 ## Repository-Struktur 
 
 ```
