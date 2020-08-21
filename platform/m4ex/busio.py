@@ -10,7 +10,8 @@
 # 2020-08-09, v1.1 - `UART` is inherited from `busio`
 # ----------------------------------------------------------------------------
 from micropython import const
-from busio import SPI, I2C, UART
+from busio import SPI, I2C
+from busio import UART as _UART
 
 __version__ = "0.1.1.0"
 
@@ -80,22 +81,27 @@ class I2CBus(object):
         self._i2c.unlock()
 
 # ----------------------------------------------------------------------------
-'''
 class UART(object):
   """UART."""
 
-  def __init__(self, id=1, baudrate=9600, bits=8, parity=None, stop=1, tx=17,
-               rx=16, rts=-1, cts=-1, txbuf=256, rxbuf=256, timeout=0,
-               timeout_char=2):
-    self._uart = UART(id, baudrate, bits, parity, stop, tx, rx, rts, cts,
-                      txbuf, rxbuf, timeout, timeout_char)
+  def __init__(self, id=1, baudrate=9600, bits=8, parity=None, stop=1, tx=None,
+               rx=None, rxbuf=64, timeout=0):
+    tout_s = timeout/1000
+    self._uart = _UART(tx=tx, rx=rx, baudrate=baudrate, bits=bits,
+                       parity=parity, stop=stop, timeout=tout_s,
+                       receiver_buffer_size=rxbuf)
+
+  def readline(self):
+    return self._uart.readline()
+
+  def write(self, buf):
+    return self._uart.write(buf)
 
   def any(self):
-    return self._uart.any()
+    return self._uart.in_waiting()
 
   def deinit(self):
     if self._uart is not None:
       self._uart.deinit()
-'''
 
 # ----------------------------------------------------------------------------
