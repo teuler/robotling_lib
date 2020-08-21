@@ -27,7 +27,7 @@ except ModuleNotFoundError:
   const = lambda x : x
   import array
 
-__version__ = "0.1.0.0"
+__version__   = "0.1.0.0"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 TOK_REM     = 0
@@ -55,12 +55,14 @@ TOK_ACK     = 3
 TOK_STA     = 4
 # Status request ...
 # >STA;
+#  <STA S=hs,ws,d,sp,sv, lv  #A=a0,a1,...,a4,is,c,ox,oy L=v0,...,v11 P=p0..p7;
+#  with hs,     state (`HexState`)
+#       ws,     walk engine state (`WEState`)
+#       d,      dial state (`DialState`)
+#       sp      servo power on/off
+#       sv,     servo voltage in mV
+#       lv,     logic voltage in mV
 '''
-//  <STA S=s,f,vs,vl,tv,ta A=a0,a1,...,a4,is,c,ox,oy L=v0,...,v11 P=p0..p7;
-//  with s,      state (HXA_xxx)
-//       f,      flags (to be defined)
-//       vs,     servo voltage in mV
-//       vl,     logic voltage in mV
 //       tv,     ms since last update of voltages
 //       ta,     ms since last update of analog inputs
 //       t,      ms since last STA message
@@ -71,6 +73,7 @@ TOK_STA     = 4
 //       v0..v11 servo load readings, two per leg
 //       p0..p17 leg positions, as angles in degree x10
 '''
+
 TOK_XP0     = 5
 # Move all servos to the default positions
 # >XP0;
@@ -155,6 +158,13 @@ class Err():
   CmdStrIncomplete       = const(8)
   Unknown                = const(9)
 
+class PortType():
+  NONE                   = const(0)
+  BLE_MPY                = const(1)
+  BLE_PC                 = const(2)
+  UART_MPY               = const(3)
+  COM_PC                 = const(4)
+
 # ----------------------------------------------------------------------------
 class RMsg(object):
   """A simple string-based interboard message format."""
@@ -174,6 +184,11 @@ class RMsg(object):
     self._sIn = ""
     self._sInBuf = ""
     self._errC = Err.Ok
+    self._portType = PortType.NONE
+
+  @property
+  def port_type(self):
+    return self._portType
 
   @property
   def token(self):
@@ -284,25 +299,10 @@ class RMsg(object):
     else:
       return "NONE"
 
-# ----------------------------------------------------------------------------
-class RMsgUART(RMsg):
-  """A simple string-based interboard message format using a serial port."""
-
-  def __init__(self, uart, isClient=True):
-    super().__init__()
-    self._uart = uart
-    self.isClient = isClient
-    self.poll = select.poll()
-    self.poll.register(self._uart, select.POLLIN)
-
-  #@timed_function
-  def send_timed(self, tout_ms=250):
-    return self.send(tout_ms)
-
-  #@micropython.native
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   def send(self, tout_ms=250):
-    """ Send message as string via the given serial connection and returns
-        the reply, if any, as a string. Accepts a timeout in [ms]
+    """ Send message as string using the respective serial interface and
+        returns the reply, if any, as a string. Accepts a timeout in [ms]
     """
     self._errC = Err.Ok
     self._sIn = ""
@@ -312,24 +312,23 @@ class RMsgUART(RMsg):
       self.to_string(self.isClient)
       if len(self._sOut) > 0:
         try:
-          self._uart.write(self._sOut)
-          res = self.poll.poll(tout_ms)
-          repl = self._uart.readline()
+          self.write(self._sOut)
+          res = self.poll(tout_ms)
+          repl = self.readline()
           self._sIn = repl.decode()
         except:
           # TODO: Catch different exceptions
           self._errC = Err.Unknown
     return self._sIn
 
-  #@micropython.native
   def receive(self, tout_ms=50):
     """ Read from serial connection and check if a complete message is
         available. Returns an error code
     """
     self._errC = Err.Ok
-    if self._uart.any() > 0:
+    if self.any() > 0:
       # Characters are waiting; add them to the buffer
-      self._sInBuf += self._uart.read().decode()
+      self._sInBuf += self.read().decode()
 
     if len(self._sInBuf) < TOK_MinMsgLen_bytes:
       # Too few characters for a complete message
@@ -348,5 +347,125 @@ class RMsgUART(RMsg):
       self._errC = self.from_string(msg)
       self._sInBuf = MSG_Client +MSG_Client.join(tmp[2:])
       return self._errC == Err.Ok
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  def _poll(self, tout_ms):
+    pass
+
+  def deinit(self):
+    pass
+
+# ----------------------------------------------------------------------------
+class RMsgUARTMPy(RMsg):
+  """A simple string-based interboard message format using a serial UART
+     under MicroPython."""
+
+  def __init__(self, uart, isClient=True):
+    super().__init__()
+    self._uart = uart
+    self.isClient = isClient
+    self.poll = select.poll()
+    self.poll.register(self._uart, select.POLLIN)
+    self.write = self._write
+    self.poll = self._poll
+    self.read = self._read
+    self.readline = self._readline
+    self.any = self._any
+    self._portType = PortType.UART_MPY
+
+  @property
+  def isConnected(self):
+     return self.self._uart is not None
+
+  def _write(self, s):
+    self._uart.write(s)
+
+  def _poll(self, tout_ms):
+    return self.poll.poll(tout_ms)
+
+  def _read(self):
+    return self._uart.read()
+
+  def _readline(self):
+    return self._uart.readline()
+
+  def _any(self):
+    return self._uart.any()
+
+# ----------------------------------------------------------------------------
+class RMsgBLEMPy(RMsg):
+  """A simple string-based interboard message format using a serial BLE
+     peripheral protocol under MicroPython."""
+
+  #def __init__(self, name="ble-uart", isClient=True):
+  def __init__(self, bsp, isClient=True):
+    super().__init__()
+    self.isClient = isClient
+    self._bsp = bsp
+    self.poll = self._poll
+    self.write = self._bsp.write
+    self.read = self._bsp.read
+    self.readline = self._bsp.read
+    self.any = self._any
+    self._portType = PortType.BLE_MPY
+
+  @property
+  def isConnected(self):
+     return self._bsp.is_connected
+
+  def _poll(self, tout_ms):
+    pass
+
+  def _any(self):
+    return len(self._bsp.rx_buffer)
+
+  def deinit(self):
+    pass
+
+# ----------------------------------------------------------------------------
+class RMsgCOM(RMsg):
+  """A simple string-based interboard message format using a serial port
+     under Windows/Linux."""
+
+  def __init__(self, com, baudrate, timeout=1.0, isClient=True):
+    super().__init__()
+    self._com = com
+    self._baudrate = baudrate
+    self.isClient = isClient
+    try:
+      import serial
+      self.serClient = serial.Serial(com, baudrate, timeout=timeout)
+      self.serClient.flushInput()
+      self.serClient.flushOutput()
+      self._isConnected = self.serClient.isOpen()
+      self.write = self._write
+      self.poll = self._poll
+      self.read = self._read
+      self.readline = self._readline
+      self.any = self._any
+      self._portType = PortType.COM_PC
+    except serial.SerialException as e:
+      print("ERROR: Could not open {0}".format(com))
+
+  @property
+  def isConnected(self):
+     self._isConnected = self.serClient.isOpen()
+     return self._isConnected
+
+  def _write(self, s):
+    self.serClient.write(s.encode('utf-8') +b"\n")
+
+  def _read(self):
+    return self.serClient.read().decode()
+
+  def _readline(self):
+    return self.serClient.read_until()
+
+  def _any(self):
+    return self.serClient.in_waiting
+
+  def deinit(self):
+    if self.serClient:
+      self.serClient.close()
 
 # ----------------------------------------------------------------------------

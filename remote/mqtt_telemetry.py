@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# telemetry.py
+# mqtt_telemetry.py
 # Telemetry via the MQTT protocol (test).
 #
 # The MIT License (MIT)

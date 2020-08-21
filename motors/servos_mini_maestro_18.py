@@ -33,6 +33,7 @@ import time
 from micropython import const
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.motors.servo_base import ServoBase
+import robotling_lib.misc.ansi_color as ansi
 
 from robotling_lib.platform.platform import platform
 if (platform.ID == platform.ENV_ESP32_UPY or
@@ -204,10 +205,11 @@ class MiniMaestro18:
       self._isReady = True
     except:
       pass
-    print("[{0:>12}] {1:35} ({2}): {3}"
+    c = ansi.GREEN if self._isReady else ansi.RED
+    print(c +"[{0:>12}] {1:35} ({2}): {3}"
           .format(CHIP_NAME,
                   "MiniMaestro 18-channel servo driver", __version__,
-                  "ok" if self._isReady else "NOT FOUND"))
+                  "ok" if self._isReady else "NOT FOUND") +ansi.BLACK)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   def reset(self):

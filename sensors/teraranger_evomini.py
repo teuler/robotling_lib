@@ -37,7 +37,6 @@ TERA_DIST_POS_INF   = const(0xFFFF)
 TERA_DIST_INVALID   = const(0x0001)
 TERA_POLL_WAIT_MS   = const(10)
 
-# pylint: disable=bad-whitespace
 # Internal constants and register values:
 _TERA_BAUD          = 115200
 _TERA_CMD_WAIT_MS   = const(25)

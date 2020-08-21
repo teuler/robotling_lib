@@ -10,7 +10,7 @@
 # 2020-08-08, v1.3 - pin/device assignments into separate files
 # ----------------------------------------------------------------------------
 from micropython import const
-from robotling_board_version import BOARD_VER
+#from robotling_board_version import BOARD_VER
 from robotling_lib.platform.platform import platform
 
 __version__ = "0.1.3.0"

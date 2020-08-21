@@ -33,6 +33,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # ----------------------------------------------------------------------------
+import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.platform.platform import platform
 if (platform.ID == platform.ENV_ESP32_UPY or
     platform.ID == platform.ENV_ESP32_TINYPICO):
@@ -116,7 +117,8 @@ class DotStar:
     self.auto_write = auto_write
 
     t = "6x12 DotStar ({0})". format("software" if self._spi == None else "spi")
-    print("[{0:>12}] {1:35} ({2}): ok".format(CHIP_NAME, t, __version__))
+    print(ansi.GREEN +"[{0:>12}] {1:35} ({2}): ok"
+          .format(CHIP_NAME, t, __version__) +ansi.BLACK)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   def deinit(self):
