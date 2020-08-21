@@ -11,7 +11,7 @@ import array
 from micropython import const
 from robotling_lib.misc.helpers import timed_function
 
-import robotling_board as rb
+import robotling_lib.robotling_board as rb
 from robotling_lib.platform.platform import platform
 if platform.ID == platform.ENV_ESP32_UPY:
   import robotling_lib.platform.esp32.dio as dio

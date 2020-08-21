@@ -10,13 +10,16 @@
 # 2020-08-08, v1.3 - pin/device assignments into separate files
 # ----------------------------------------------------------------------------
 from micropython import const
-#from robotling_board_version import BOARD_VER
 from robotling_lib.platform.platform import platform
+try:
+  from robotling_board_version import BOARD_VER
+except ImportError:
+  BOARD_VER = 0
 
 __version__ = "0.1.3.0"
 
-SPI_FRQ   = const(4000000)
-I2C_FRQ   = const(400000)
+SPI_FRQ    = const(4000000)
+I2C_FRQ    = const(400000)
 
 # I2C devices, maximal clock frequencies:
 # AMG88XX (Infrared Array Sensor “Grid-EYE”)  <= 400 KHz

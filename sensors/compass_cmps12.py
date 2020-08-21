@@ -19,7 +19,7 @@ from math import radians
 from micropython import const
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.sensors.sensor_base import SensorBase
-import robotling_board as rb
+import robotling_lib.robotling_board as rb
 
 __version__ = "0.1.1.0"
 CHIP_NAME   = "CMPS12"
