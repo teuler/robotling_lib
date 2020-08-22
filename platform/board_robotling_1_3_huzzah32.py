@@ -48,10 +48,12 @@ ADC_BAT    = board.BAT
 # somewhat smoother, a higher frequency can be tested
 # Note 2: DIO uses now the RMT feature of the ESP32, which offers an
 # alternative to the standard PWM with more flexible frequencies
-SERVO_FRQ  = 50 #250
+# Note 3: Somehow the behaviour of RMT channels has changed sometime early
+# 2020; not sure what the problem is. For now, fall back to "normal" PWM
+SERVO_FRQ  = 50 # 250
 MOTOR_FRQ  = SERVO_FRQ
-MOTOR_A_CH = 0
-MOTOR_B_CH = 1
+MOTOR_A_CH = -1 # 0, if RMT channels are used
+MOTOR_B_CH = -1 # 1, if TMT channels are used
 # pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------

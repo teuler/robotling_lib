@@ -6,18 +6,19 @@
 #
 # The MIT License (MIT)
 # Copyright (c) 2018 Thomas Euler
-# 2018-11-25, v1
-# 2019-12-25, Note that the ESP32 Microsoft port supports only one frequency
-#             for all PWM objects.
-# 2019-12-30, RMT feature eabled
-# 2020-01-18, Buzzer class added
+# 2018-11-25, v1.0
+# 2019-12-25, v1.1 Note that the ESP32 Microsoft port supports only one
+#                  frequency for all PWM objects.
+# 2019-12-30, v1.1 RMT feature eabled
+# 2020-01-18, v1.1 Buzzer class added
+# 2020-08-21, v1.1 `PWMOut.uses_rmt` added
 # ----------------------------------------------------------------------------
 import time
 from micropython import const
 from machine import Pin, PWM
 from esp32 import RMT
 
-__version__     = "0.1.1.0"
+__version__     = "0.1.1.1"
 
 PULL_UP         = const(0)
 PULL_DOWN       = const(1)
@@ -153,6 +154,10 @@ class PWMOut(object):
       return MAX_DUTY
     else:
       return RMT_MAX_DUTY
+
+  @property
+  def uses_rmt(self):
+    return self._chanRMT >= 0
 
   def __logFrequency(self):
     print("PWM frequency is {0:.1f} kHz".format(self.freq_Hz/1000))

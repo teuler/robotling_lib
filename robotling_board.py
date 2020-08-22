@@ -49,7 +49,6 @@ elif platform.ID == platform.ENV_ESP32_TINYPICO:
 elif platform.ID == platform.ENV_CPY_SAM51:
   # SAM51 board w/CircuitPython
   from robotling_lib.platform.board_robotling_1_3_sam51 import *
-  print("SAM")
 
 else:
   # No fitting board found or wtong board version number

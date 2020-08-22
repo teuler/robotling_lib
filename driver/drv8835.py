@@ -6,6 +6,7 @@
 # Copyright (c) 2018 Thomas Euler
 # 2018-09-23, v1
 # 2018-11-25, v1.1, now uses dio_*.py to access machine
+# 2020-08-21, v1.2, correct frequency for non-RMT mode
 # ----------------------------------------------------------------------------
 import array
 from micropython import const
@@ -20,7 +21,7 @@ elif platform.ID == platform.ENV_CPY_SAM51:
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
 
-__version__ = "0.1.1.0"
+__version__ = "0.1.2.0"
 CHIP_NAME   = "drv8835"
 CHAN_COUNT  = const(2)
 MODE_NONE   = const(0)
@@ -51,8 +52,11 @@ class DRV8835(object):
     elif mode == MODE_IN_IN:
       print("IN/IN mode not implemented.")
 
-    f = self.pinA_EN.freq_Hz/10**6
-    s = "2x DC motor driver ({0:.3f} MHz)".format(f)
+    if self.pinA_EN.uses_rmt:
+      f = "{0:.3f} MHz".format(self.pinA_EN.freq_Hz/10**6)
+    else:
+      f = "{0:.3f} Hz".format(self.pinA_EN.freq_Hz)
+    s = "2x DC motor driver ({0})".format(f)
     print("[{0:>12}] {1:35} ({2}): {3}"
           .format(CHIP_NAME, s, __version__,
                   "ok" if self._mode != MODE_NONE else "FAILED"))

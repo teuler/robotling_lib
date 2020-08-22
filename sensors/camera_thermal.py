@@ -14,8 +14,15 @@
 # - the "probability" for a blob can exceed 1.0 (???)
 #
 # ----------------------------------------------------------------------------
-import blob
+try:
+  import blob
+  BLOB_SUPPORT = 1
+except ImportError:
+  import robotling_lib.blob as blob
+  BLOB_SUPPORT = 0
+
 from robotling_lib.sensors.sensor_base import CameraBase
+from robotling_lib.misc.helpers import timed_function
 
 __version__ = "0.1.1.0"
 
@@ -25,7 +32,7 @@ class Camera(CameraBase):
 
   def __init__(self, driver):
     super().__init__(driver)
-    self._type = "thermal camera (8x8 pixels)"
+    self._type = "thermal camera (8x8)"
     if driver.isReady:
       # Initialize
       self._dxy = self.resolution
@@ -33,11 +40,13 @@ class Camera(CameraBase):
       self._img64x1 = []
       self._blobList = []
 
+    s = "{0} ({1})".format(self._type, "C" if BLOB_SUPPORT == 1 else "Python")
     print("[{0:>12}] {1:35} ({2}): {3}"
-          .format(driver.name, self._type, __version__,
+          .format(driver.name, s, __version__,
                   "ok" if driver._isReady else "FAILED"))
 
-  def detectBlobs(self, filter=0, nsd=0.7):
+  #@timed_function
+  def detectBlobs(self, filter=0, nsd=1.0):
     """ Acquire image and detect blobs, using filter mode `filter` (with
         0=no filter, 1=n/a, 2=sharpen) and threshold for blob detection
         of `nsd` (in number of standard deviations)
@@ -47,9 +56,7 @@ class Camera(CameraBase):
     if self._driver.isReady:
       self._params = (filter, nsd)
       self._img64x1 = list(self._driver.pixels_64x1)
-      #print(self._img64x1)
       self._blobList = blob.detect(self._img64x1, self._dxy, self._params)
-      #print(self._blobList)
 
   @property
   def blobsRaw(self):
