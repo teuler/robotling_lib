@@ -6,25 +6,25 @@
 # Copyright (c) 2019 Thomas Euler
 # 2019-08-01, v1
 # 2019-12-15, v1.1
+# 2020-08-21, v1.2 Now only valid blobs are returned; now uses a Python blob
+#                  module if `blob` is not in the firmware
 #
 # Known issues with `blob`:
-# - if more than one valid blobs are returned, the entries except for the
-#   first seem not to contain vaild data
-# - only mode=0 seems not to crash the ESP32 ...
-# - the "probability" for a blob can exceed 1.0 (???)
+# - Only mode=0 seems not to crash the ESP32 ...
+# - The "probability" for a blob can exceed 1.0 (???)
 #
 # ----------------------------------------------------------------------------
 try:
   import blob
   BLOB_SUPPORT = 1
 except ImportError:
-  import robotling_lib.blob as blob
+  import robotling_lib.misc.blob as blob
   BLOB_SUPPORT = 0
 
 from robotling_lib.sensors.sensor_base import CameraBase
 from robotling_lib.misc.helpers import timed_function
 
-__version__ = "0.1.1.0"
+__version__ = "0.1.2.0"
 
 # ----------------------------------------------------------------------------
 class Camera(CameraBase):
