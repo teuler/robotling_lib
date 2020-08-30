@@ -14,15 +14,19 @@
 # - The "probability" for a blob can exceed 1.0 (???)
 #
 # ----------------------------------------------------------------------------
+import time
 try:
-  import blob
-  BLOB_SUPPORT = 1
-except ImportError:
-  import robotling_lib.misc.blob as blob
+  import robotling_lib.misc.blob_ulab2 as blob
   BLOB_SUPPORT = 0
+except ImportError:
+  try:
+    import robotling_lib.misc.blob_ulab as blob
+    BLOB_SUPPORT = 1
+  except ImportError:
+    import robotling_lib.misc.blob as blob
+    BLOB_SUPPORT = 2
 
 from robotling_lib.sensors.sensor_base import CameraBase
-from robotling_lib.misc.helpers import timed_function
 
 __version__ = "0.1.2.0"
 
@@ -39,24 +43,24 @@ class Camera(CameraBase):
       self._params = None
       self._img64x1 = []
       self._blobList = []
+      self._dtMean = 0
 
-    s = "{0} ({1})".format(self._type, "C" if BLOB_SUPPORT == 1 else "Python")
+    s = "{0} ({1})".format(self._type, ["C++", "ulab", "Python"][BLOB_SUPPORT])
     print("[{0:>12}] {1:35} ({2}): {3}"
           .format(driver.name, s, __version__,
                   "ok" if driver._isReady else "FAILED"))
 
-  #@timed_function
-  def detectBlobs(self, filter=0, nsd=1.0):
-    """ Acquire image and detect blobs, using filter mode `filter` (with
-        0=no filter, 1=n/a, 2=sharpen) and threshold for blob detection
-        of `nsd` (in number of standard deviations)
+  def detectBlobs(self, kernel=None, nsd=1.0):
+    """ Acquire image and detect blobs, using filter (`kernel`), and threshold
+        for blob detection of `nsd` (in number of standard deviations)
     """
     self._img64x1 = []
     self._blobList = []
     if self._driver.isReady:
-      self._params = (filter, nsd)
       self._img64x1 = list(self._driver.pixels_64x1)
-      self._blobList = blob.detect(self._img64x1, self._dxy, self._params)
+      if kernel:
+        self._img64x1 = blob.spatial_filter(self._img64x1, kernel, self._dxy)
+      self._blobList = blob.find_blobs(self._img64x1, self._dxy, nsd)
 
   @property
   def blobsRaw(self):
