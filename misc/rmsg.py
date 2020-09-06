@@ -164,27 +164,32 @@ class PortType():
   BLE_PC                 = const(2)
   UART_MPY               = const(3)
   COM_PC                 = const(4)
+  I2C_MPY                = const(5)
 
 # ----------------------------------------------------------------------------
 class RMsg(object):
   """A simple string-based interboard message format."""
 
   def __init__(self):
-    self.clear()
+    """ Initialize message content
+    """
+    self._paramCh = bytearray(TOK_MaxParams)
+    self._nData = bytearray(TOK_MaxData)
+    self._poll = None
+    self._portType = PortType.NONE
+    self.reset(clearBuffer=True)
 
-  def clear(self):
+  def reset(self, clearBuffer=False):
     """ Reset message content
     """
     self._tok = TOK_NONE
     self._nParams = 0
-    self._paramCh = bytearray(TOK_MaxParams)
-    self._nData = bytearray(TOK_MaxData)
-    self._data = []
     self._sOut = ""
     self._sIn = ""
-    self._sInBuf = ""
+    if clearBuffer:
+      self._sInBuf = ""
+    self._data = []
     self._errC = Err.Ok
-    self._portType = PortType.NONE
 
   @property
   def port_type(self):
@@ -257,7 +262,7 @@ class RMsg(object):
   def from_string(self, sMsg):
     """ Parse string into message
     """
-    self.clear()
+    self.reset()
     if not (sMsg[0] in [MSG_Client, MSG_Host]  and sMsg[-1] == MSG_EndChr):
       self._errC = Err.CmdStrIncomplete
     else:
@@ -297,10 +302,10 @@ class RMsg(object):
           s += "{0}={1} ".format(chr(self._paramCh[iP]), self._data_as_str(iP))
       return s
     else:
-      return "NONE"
+      return "n/a"
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  def send(self, tout_ms=250):
+  def send(self, tout_ms=100):
     """ Send message as string using the respective serial interface and
         returns the reply, if any, as a string. Accepts a timeout in [ms]
     """
@@ -313,9 +318,11 @@ class RMsg(object):
       if len(self._sOut) > 0:
         try:
           self.write(self._sOut)
-          res = self.poll(tout_ms)
-          repl = self.readline()
-          self._sIn = repl.decode()
+          if tout_ms > 0:
+            if self._poll:
+              res = self._poll(tout_ms)
+            repl = self.readline()
+            self._sIn = repl.decode()
         except:
           # TODO: Catch different exceptions
           self._errC = Err.Unknown
@@ -349,9 +356,6 @@ class RMsg(object):
       return self._errC == Err.Ok
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  def _poll(self, tout_ms):
-    pass
-
   def deinit(self):
     pass
 
@@ -364,13 +368,13 @@ class RMsgUARTMPy(RMsg):
     super().__init__()
     self._uart = uart
     self.isClient = isClient
-    self.poll = select.poll()
-    self.poll.register(self._uart, select.POLLIN)
+    self.pollObj = select.poll()
+    self.pollObj.register(self._uart, select.POLLIN)
     self.write = self._write
-    self.poll = self._poll
     self.read = self._read
     self.readline = self._readline
     self.any = self._any
+    self._poll = self._poll_via_select
     self._portType = PortType.UART_MPY
 
   @property
@@ -380,8 +384,8 @@ class RMsgUARTMPy(RMsg):
   def _write(self, s):
     self._uart.write(s)
 
-  def _poll(self, tout_ms):
-    return self.poll.poll(tout_ms)
+  def _poll_via_select(self, tout_ms):
+    return self.pollObj.poll(tout_ms)
 
   def _read(self):
     return self._uart.read()
@@ -402,7 +406,6 @@ class RMsgBLEMPy(RMsg):
     super().__init__()
     self.isClient = isClient
     self._bsp = bsp
-    self.poll = self._poll
     self.write = self._bsp.write
     self.read = self._bsp.read
     self.readline = self._bsp.read
@@ -412,9 +415,6 @@ class RMsgBLEMPy(RMsg):
   @property
   def isConnected(self):
      return self._bsp.is_connected
-
-  def _poll(self, tout_ms):
-    pass
 
   def _any(self):
     return len(self._bsp.rx_buffer)
@@ -439,7 +439,6 @@ class RMsgCOM(RMsg):
       self.serClient.flushOutput()
       self._isConnected = self.serClient.isOpen()
       self.write = self._write
-      self.poll = self._poll
       self.read = self._read
       self.readline = self._readline
       self.any = self._any

@@ -19,10 +19,12 @@ MISO       = board.MISO
 SCL        = board.SCL
 SDA        = board.SDA
 
-# UART  ---------------
+# -> Client -----------
+# UART 1
+UART_CH    = const(1)
 TX         = board.TX
 RX         = board.RX
-BAUD       = 38400
+BAUD       = 115200 #38400
 
 # Other ---------------
 RED_LED    = board.LED

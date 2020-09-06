@@ -19,13 +19,15 @@ MISO       = board.MISO
 SCL        = board.SCL
 SDA        = board.SDA
 
-# UART 1 --------------
+# -> Client -----------
+# UART 1
 UART_CH    = const(1)
-TX         = board.D14 # D18
-RX         = board.D04 # D19
-BAUD       = 38400
+TX         = board.D14
+RX         = board.D04
+BAUD       = 115200 #38400
 
-# UART 2 --------------
+# -> Maestro ----------
+# UART 2
 UART2_CH   = const(2)
 TX2        = board.D21
 RX2        = board.D22

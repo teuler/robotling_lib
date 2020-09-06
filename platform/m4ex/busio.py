@@ -44,14 +44,26 @@ class SPIBus(object):
 class I2CBus(object):
   """I2C bus access."""
 
-  def __init__(self, _freq, _scl, _sda):
+  def __init__(self, _freq, _scl, _sda, code=0):
     self._i2cDevList = []
-    self._i2c = I2C(scl=_scl, sda=_sda, frequency=_freq)
+    if not code == 0:
+      # Default to software implementation of I2C
+      from bitbangio import I2C as softI2C
+      self._i2c = softI2C(scl=_scl, sda=_sda, frequency=_freq)
+      codeStr = "Software"
+    else:
+      # Hardware implementation ...
+      self._i2c = I2C(scl=_scl, sda=_sda, frequency=_freq)
+      codeStr = "Hardware"
     if not self._i2c.try_lock():
       print("ERROR: busio.I2CBus: no lock for scan()")
     else:
       try:
+        print("{0} I2C bus frequency is {1} kHz".format(codeStr, _freq/1000))
+        print("Scanning I2C bus ...")
         self._i2cDevList = self._i2c.scan()
+        print("... {0} device(s) found ({1})"
+              .format(len(self._i2cDevList), self._i2cDevList))
       finally:
         self._i2c.unlock()
 
