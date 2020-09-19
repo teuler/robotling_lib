@@ -82,12 +82,17 @@ class I2CBus(object):
   def readinto(self, buf):
     self._i2c.readinto(buf)
 
+  def readfrom(self, addr):
+    return self._i2c.readfrom(addr)
+
   def readfrom_into(self, addr, buf):
     self._i2c.readfrom_into(addr, buf)
 
   def write_then_readinto(self, addr, bufo, bufi, out_start=0, out_end=None,
                           in_start=0, in_end=None, stop_=True):
     self._i2c.writeto(addr, bufo[out_start:out_end], stop_)
-    self._i2c.readfrom_into(addr, bufi[in_start:in_end])
+    buf = bytearray(bufi[in_start:in_end])
+    self._i2c.readfrom_into(addr, buf)
+    bufi[in_start:in_end] = buf
 
 # ----------------------------------------------------------------------------

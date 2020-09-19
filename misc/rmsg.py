@@ -177,16 +177,16 @@ class RMsg(object):
     self._nData = bytearray(TOK_MaxData)
     self._poll = None
     self._portType = PortType.NONE
-    self.reset(clearBuffer=True)
+    self.reset(clearBuf=True)
 
-  def reset(self, clearBuffer=False):
+  def reset(self, clearBuf=False):
     """ Reset message content
     """
     self._tok = TOK_NONE
     self._nParams = 0
     self._sOut = ""
     self._sIn = ""
-    if clearBuffer:
+    if clearBuf:
       self._sInBuf = ""
     self._data = []
     self._errC = Err.Ok
@@ -418,9 +418,6 @@ class RMsgBLEMPy(RMsg):
 
   def _any(self):
     return len(self._bsp.rx_buffer)
-
-  def deinit(self):
-    pass
 
 # ----------------------------------------------------------------------------
 class RMsgCOM(RMsg):

@@ -9,6 +9,7 @@
 # ----------------------------------------------------------------------------
 import array
 from micropython import const
+import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.misc.helpers import timed_function
 
 try:
@@ -93,9 +94,10 @@ class TeraRangerEvoMini:
       self._poll.register(self._uart, select.POLLIN)
 
     self._isReady = True
-    print("[{0:>12}] {1:35} ({2}): {3}"
+    c = ansi.GREEN if self._isReady else ansi.RED
+    print(c +"[{0:>12}] {1:35} ({2}): {3}"
           .format(CHIP_NAME, "TeraRanger Evo Mini", __version__,
-                  "ok" if self._isReady else "NOT FOUND"))
+                  "ok" if self._isReady else "NOT FOUND") +ansi.BLACK)
 
   def __deinit__(self):
     if self._uart is not None:

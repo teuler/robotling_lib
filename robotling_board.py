@@ -19,7 +19,7 @@ except ImportError:
 __version__ = "0.1.3.0"
 
 SPI_FRQ    = const(4000000)
-I2C_FRQ    = const(400000)
+I2C_FRQ    = const(100000) #400000
 
 # I2C devices, maximal clock frequencies:
 # AMG88XX (Infrared Array Sensor “Grid-EYE”)  <= 400 KHz
@@ -39,12 +39,12 @@ if platform.ID == platform.ENV_ESP32_UPY:
     from robotling_lib.platform.board_robotling_1_3_huzzah32 import *
   elif BOARD_VER == 200:
     from robotling_lib.platform.board_robotling_2_0_huzzah32 import *
-  else:
-    from robotling_lib.platform.board_none_huzzah32 import *
+  elif BOARD_VER == 032:
+    from robotling_lib.platform.board_hexapod_0_32_huzzah32 import *
 
 elif platform.ID == platform.ENV_ESP32_TINYPICO:
   # TinyPICO ESP32 board w/MicroPython
-  from robotling_lib.platform.board_hexapod_0_3_tinypico import *
+  from robotling_lib.platform.board_hexapod_0_31_tinypico import *
 
 elif platform.ID == platform.ENV_CPY_SAM51:
   # SAM51 board w/CircuitPython

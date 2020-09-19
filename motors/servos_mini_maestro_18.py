@@ -50,7 +50,6 @@ CHAN_COUNT       = const(18)
 DEF_RANGE_DEG    = (0, 180)
 DEF_RANGE_US     = (600, 2400)
 
-
 _ADDRESS         = const(0x0C)
 _FREQ            = const(50)
 _BAUDRATE        = const(57600)
