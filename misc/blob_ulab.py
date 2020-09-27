@@ -90,6 +90,9 @@ def spatial_filter(img, kernel, dxy=None):
 
 # ---------------------------------------------------------------------
 @timed_function
+def find_blobs_timed(img, dxy, nsd=1.0):
+  return find_blobs(img, dxy, nsd)
+
 def find_blobs(img, dxy, nsd=1.0):
   """ Detect continues area(s) ("blobs") with pixels above a certain
       threshold in an image. `img` contains the flattened image (1D),
