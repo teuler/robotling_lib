@@ -13,14 +13,14 @@
 # 2020-01-01, v1.4, micropython.native
 # ----------------------------------------------------------------------------
 import array
-from misc.helpers import timed_function
-from motors.servo_base import ServoBase
+from robotling_lib.misc.helpers import timed_function
+from robotling_lib.motors.servo_base import ServoBase
 
-from platform.platform import platform
+from robotling_lib.platform.platform import platform
 if platform.ID == platform.ENV_ESP32_UPY:
-  import platform.esp32.dio as dio
+  import robotling_lib.platform.esp32.dio as dio
 elif platform.ID == platform.ENV_CPY_SAM51:
-  import platform.m4ex.dio as dio
+  import robotling_lib.platform.m4ex.dio as dio
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
 

@@ -38,7 +38,6 @@ try:
 except ImportError:
   import ustruct as struct
 
-'''
 class Struct:
   """
   Arbitrary structure register that is readable and writeable.
@@ -49,19 +48,20 @@ class Struct:
   """
   def __init__(self, register_address, struct_format):
     self.format = struct_format
-    self.buffer = bytearray(1+struct.calcsize(self.format))
-    self.buffer[0] = register_address
+    self.address = register_address
 
   def __get__(self, obj, objtype=None):
-    with obj.i2c_device as i2c:
-      i2c.write_then_readinto(self.buffer, self.buffer, out_end=1, in_start=1)
-    return struct.unpack_from(self.format, memoryview(self.buffer)[1:])
+    b = bytearray(1 +struct.calcsize(self.format))
+    b[0] = self.address
+    addr = obj._i2cAddr
+    obj._i2c.write_then_readinto(addr, b, b, out_end=1, in_start=1, stop_=False)
+    return struct.unpack_from(self.format, memoryview(b)[1:])
 
   def __set__(self, obj, value):
-    struct.pack_into(self.format, self.buffer, 1, *value)
-    with obj.i2c_device as i2c:
-      i2c.write(self.buffer)
-'''
+    b = bytearray(1 +struct.calcsize(self.format))
+    b[0] = self.address
+    struct.pack_into(self.format, b, 1, *value)
+    obj._i2c.writeto(obj._i2cAddr, b)
 
 class UnaryStruct:
   """
@@ -74,31 +74,19 @@ class UnaryStruct:
   def __init__(self, register_address, struct_format):
     self.format = struct_format
     self.address = register_address
-    self.buf = bytearray(1 +struct.calcsize(self.format))
-    self.buf[0] = self.address
 
   def __get__(self, obj, objtype=None):
-    '''
-    buf = bytearray(1+struct.calcsize(self.format))
-    buf[0] = self.address
-    with obj.i2c_device as i2c:
-      i2c.write_then_readinto(buf, buf, out_end=1, in_start=1)
-    return struct.unpack_from(self.format, buf, 1)[0]
-    '''
-    obj._i2c.write_then_readinto(obj._i2cAddr, self.buf, self.buf, out_end=1,
-                                 in_start=1, stop_=False)
-    return struct.unpack_from(self.format, self.buf, 1)[0]
+    b = bytearray(1 +struct.calcsize(self.format))
+    b[0] = self.address
+    addr = obj._i2cAddr
+    obj._i2c.write_then_readinto(addr, b, b, out_end=1, in_start=1, stop_=False)
+    return struct.unpack_from(self.format, b, 1)[0]
 
   def __set__(self, obj, value):
-    '''
-    buf = bytearray(1+struct.calcsize(self.format))
-    buf[0] = self.address
-    struct.pack_into(self.format, buf, 1, value)
-    with obj.i2c_device as i2c:
-      i2c.write(buf)
-    '''
-    struct.pack_into(self.format, self.buf, 1, value)
-    obj._i2c.writeto(obj._i2cAddr, self.buf)
+    b = bytearray(1 +struct.calcsize(self.format))
+    b[0] = self.address
+    struct.pack_into(self.format, b, 1, value)
+    obj._i2c.writeto(obj._i2cAddr, b)
 
 '''
 class ROUnaryStruct(UnaryStruct):

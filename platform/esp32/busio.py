@@ -8,12 +8,14 @@
 # Copyright (c) 2018 Thomas Euler
 # 2018-09-21, v1
 # 2019-12-21, v1.1 - hardware I2C bus possible
+# 2020-08-09, v1.2 - `UART` is inherited from `machine`
 # ----------------------------------------------------------------------------
 from os import uname
 from machine import SPI, Pin, I2C
 from micropython import const
+from machine import UART
 
-__version__ = "0.1.1.0"
+__version__ = "0.1.2.0"
 
 # ----------------------------------------------------------------------------
 class SPIBus(object):
@@ -80,12 +82,17 @@ class I2CBus(object):
   def readinto(self, buf):
     self._i2c.readinto(buf)
 
+  def readfrom(self, addr):
+    return self._i2c.readfrom(addr)
+
   def readfrom_into(self, addr, buf):
     self._i2c.readfrom_into(addr, buf)
 
   def write_then_readinto(self, addr, bufo, bufi, out_start=0, out_end=None,
                           in_start=0, in_end=None, stop_=True):
     self._i2c.writeto(addr, bufo[out_start:out_end], stop_)
-    self._i2c.readfrom_into(addr, bufi[in_start:in_end])
+    buf = bytearray(bufi[in_start:in_end])
+    self._i2c.readfrom_into(addr, buf)
+    bufi[in_start:in_end] = buf
 
 # ----------------------------------------------------------------------------

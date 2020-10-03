@@ -7,16 +7,26 @@
 # 2020-08-08, v1
 #
 # ----------------------------------------------------------------------------
-import select
 import array
-from machine import UART
 from micropython import const
-from misc.helpers import timed_function
+import robotling_lib.misc.ansi_color as ansi
+from robotling_lib.misc.helpers import timed_function
 
 try:
   import struct
 except ImportError:
   import ustruct as struct
+
+from robotling_lib.platform.platform import platform
+if platform.ID == platform.ENV_ESP32_UPY:
+  from robotling_lib.platform.esp32.busio import UART
+  from time import sleep_ms
+  import select
+elif platform.ID == platform.ENV_CPY_SAM51:
+  from robotling_lib.platform.m4ex.busio import UART
+  from robotling_lib.platform.m4ex.time import sleep_ms
+else:
+  print("ERROR: No matching hardware libraries in `platform`.")
 
 __version__ = "0.1.0.0"
 CHIP_NAME   = "tera_evomini"
@@ -29,10 +39,9 @@ TERA_DIST_POS_INF   = const(0xFFFF)
 TERA_DIST_INVALID   = const(0x0001)
 TERA_POLL_WAIT_MS   = const(10)
 
-# pylint: disable=bad-whitespace
 # Internal constants and register values:
 _TERA_BAUD          = 115200
-_TERA_CMD_WAIT_MS   = const(25)
+_TERA_CMD_WAIT_MS   = const(10)
 _TERA_START_CHR     = const(0x54)
 _TERA_OUT_MODE_TEXT = bytearray([0x00, 0x11, 0x01, 0x45])
 _TERA_OUT_MODE_BIN  = bytearray([0x00, 0x11, 0x02, 0x4C])
@@ -47,44 +56,48 @@ _TERA_RANGE_LONG    = bytearray([0x00, 0x61, 0x03, 0xE9])
 class TeraRangerEvoMini:
   """Driver for the TeraRanger Evo Mini 4-pixel distance sensor."""
 
-  def __init__(self, _ch, _tx, _rx, _nPix=4, _short=True):
+  def __init__(self, id, tx, rx, nPix=4, short=True):
     """ Requires pins and channel for unused UART
     """
-    self._uart = UART(_ch, _TERA_BAUD, tx=_tx, rx=_rx)
-    self._nPix = _nPix
-    self._short = _short
+    self._uart = UART(id, baudrate=_TERA_BAUD, tx=tx, rx=rx)
+    self._nPix = nPix
+    self._short = short
 
     # Set pixel mode and prepare buffer
     if self._nPix == 4:
-      uart.write(_TERA_PIX_MODE_4)
+      self._uart.write(_TERA_PIX_MODE_4)
     elif self._nPix == 2:
-      uart.write(_TERA_PIX_MODE_2)
+      self._uart.write(_TERA_PIX_MODE_2)
     else:
       self._nPix = 1
-      uart.write(_TERA_PIX_MODE_1)
+      self._uart.write(_TERA_PIX_MODE_1)
     sleep_ms(_TERA_CMD_WAIT_MS)
-    self._nBufExp = _nPix*2 +2
+    self._nBufExp = self._nPix*2 +2
     self._dist = array.array("i", [0]*self._nPix)
+    self._inval = array.array("i", [0]*self._nPix)
 
     # Set binary mode for results
-    uart.write(TERA_OUT_MODE_BIN)
+    self._uart.write(_TERA_OUT_MODE_BIN)
     sleep_ms(_TERA_CMD_WAIT_MS)
 
     # Set distance mode
     if self._short:
-      uart.write(TERA_RANGE_SHORT)
+      self._uart.write(_TERA_RANGE_SHORT)
     else:
-      uart.write(TERA_RANGE_LONG)
+      self._uart.write(_TERA_RANGE_LONG)
     sleep_ms(_TERA_CMD_WAIT_MS)
 
-    # Prepare polling construct
-    self._poll = select.poll()
-    self._poll.register(self._uart, select.POLLIN)
+    # Prepare polling construct, if available
+    self._poll = None
+    if platform.ID == platform.ENV_ESP32_UPY:
+      self._poll = select.poll()
+      self._poll.register(self._uart, select.POLLIN)
 
     self._isReady = True
-    print("[{0:>12}] {1:35} ({2}): {3}"
+    c = ansi.GREEN if self._isReady else ansi.RED
+    print(c +"[{0:>12}] {1:35} ({2}): {3}"
           .format(CHIP_NAME, "TeraRanger Evo Mini", __version__,
-                  "ok" if self._isReady else "NOT FOUND"))
+                  "ok" if self._isReady else "NOT FOUND") +ansi.BLACK)
 
   def __deinit__(self):
     if self._uart is not None:
@@ -92,25 +105,44 @@ class TeraRangerEvoMini:
       self._isReady == False
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  def _update(self):
+  def update(self, raw=True):
     """ Update distance reading(s)
     """
     if self._uart is not None:
       # UART seems to be ready ...
-      np = self_nPix
-      self.poll.poll(TERA_POLL_WAIT_MS)
+      np = self._nPix
+      if self._poll is not None:
+        if len(self._poll.poll(TERA_POLL_WAIT_MS)) == 0:
+          return
+      elif self._uart.any() < self._nBufExp:
+        return
       buf = self._uart.readline()
-      if buf and len(buf) == self.nBufExp and buf[0] == _TERA_START_CHR:
+      if buf and len(buf) == self._nBufExp and buf[0] == _TERA_START_CHR:
         # Is valid buffer
         if np == 4:
-          self._dist = struct.unpack_from('>HHHH', buf[1:9])
+          d = struct.unpack_from('>HHHH', buf[1:9])
         elif np == 2:
-          self._dist = struct.unpack_from('>HH', buf[1:5])
+          d = struct.unpack_from('>HH', buf[1:5])
         else:
-          self._dist = struct.unpack_from('>H', buf[1:3])
+          d = struct.unpack_from('>H', buf[1:3])
+        if raw:
+          # Just copy new values to `dist`
+          self._dist = d
+        else:
+          # Check if values are valid and keep track of last valid reading
+          for iv,v in enumerate(d):
+            if v == TERA_DIST_INVALID:
+              self._inval[iv] += 1
+            else:
+              self._dist[iv] = v
+              self._inval[iv] = 0
 
   @property
   def distance(self):
     return self._dist
+
+  @property
+  def invalids(self):
+    return self._inval
 
 # ----------------------------------------------------------------------------

@@ -33,7 +33,7 @@
 # ----------------------------------------------------------------------------
 import time
 from micropython import const
-from misc.helpers import timed_function
+from robotling_lib.misc.helpers import timed_function
 
 try:
   import struct

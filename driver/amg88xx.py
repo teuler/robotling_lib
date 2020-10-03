@@ -31,15 +31,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # ----------------------------------------------------------------------------
-from misc.helpers import timed_function
+from robotling_lib.misc.helpers import timed_function
 from micropython import const
 import errno
 
-from platform.platform import platform
+from robotling_lib.platform.platform import platform
 if platform.ID == platform.ENV_ESP32_UPY:
-  from platform.esp32.register import i2c_bit, i2c_bits
+  from robotling_lib.platform.esp32.register import i2c_bit, i2c_bits
 elif platform.ID == platform.ENV_CPY_SAM51:
-  from platform.m4ex.circuitpython.register import i2c_bit, i2c_bits
+  from robotling_lib.platform.m4ex.circuitpython.register import i2c_bit, i2c_bits
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
 

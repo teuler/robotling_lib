@@ -30,14 +30,15 @@
 # THE SOFTWARE.
 # ----------------------------------------------------------------------------
 import time
-from misc.helpers import timed_function
 from micropython import const
-from motors.servo_base import ServoBase
+from robotling_lib.misc.helpers import timed_function
+from robotling_lib.motors.servo_base import ServoBase
+import robotling_lib.misc.ansi_color as ansi
 
-from platform.platform import platform
+from robotling_lib.platform.platform import platform
 if (platform.ID == platform.ENV_ESP32_UPY or
     platform.ID == platform.ENV_ESP32_TINYPICO):
-  from machine import UART
+  from robotling_lib.platform.esp32.busio import UART
 elif platform.ID == platform.ENV_CPY_SAM51:
   pass
 else:
@@ -48,7 +49,6 @@ CHIP_NAME        = "minMaestro18"
 CHAN_COUNT       = const(18)
 DEF_RANGE_DEG    = (0, 180)
 DEF_RANGE_US     = (600, 2400)
-
 
 _ADDRESS         = const(0x0C)
 _FREQ            = const(50)
@@ -204,10 +204,11 @@ class MiniMaestro18:
       self._isReady = True
     except:
       pass
-    print("[{0:>12}] {1:35} ({2}): {3}"
+    c = ansi.GREEN if self._isReady else ansi.RED
+    print(c +"[{0:>12}] {1:35} ({2}): {3}"
           .format(CHIP_NAME,
                   "MiniMaestro 18-channel servo driver", __version__,
-                  "ok" if self._isReady else "NOT FOUND"))
+                  "ok" if self._isReady else "NOT FOUND") +ansi.BLACK)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   def reset(self):
