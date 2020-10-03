@@ -1,7 +1,7 @@
 # robotling_lib
 ["robotling"](https://github.com/teuler/robotling) is a simple circuit board to control small robots, mainly for educational purpose. This repository contains robotling-related hardware and software libraries.
 
-> Note: _Several of the drivers are based on code developed by [Adafruit](https://github.com/adafruit); for details see information in respective file header._ 
+> Note: _Several of the drivers are based on code developed by [Adafruit](https://github.com/adafruit); for details on source, copyright, original authors etc, see information in respective file header._ 
 
 For an overview of some of the supported hardware, see ["Sensoren etc."](https://github.com/teuler/robotling/wiki/Sensoren-etc) (in German).
 
