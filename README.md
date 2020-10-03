@@ -34,5 +34,6 @@ Device drivers (`driver`):
 - `lsm9ds0.py` - Class for LSM9DS0 accelerometer/magnetometer/gyroscope driver
 - `mcp3208.py` - Class for 8-channel 12-bit SPI A/D converter MCP3208 driver
 - `pca9685.py` - Class for PCA9685 16-channel servo driver
+- `ssd1327.py` - Class for SSD1327 OLED monochrom display (I2C)
 
 
