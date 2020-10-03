@@ -51,11 +51,13 @@ class I2CBus(object):
     if not code in [-1,0,1] or v < 1.12:
       # Defaults to software implementation of I2C
       self._i2c = I2C(scl=Pin(scl), sda=Pin(sda), freq=_freq)
+      self._isSoft = True
       codeStr = "Software"
     else:
       # User selected -1=software or 0,1=hardware implementation of I2C
       self._i2c = I2C(code, scl=Pin(scl), sda=Pin(sda), freq=_freq)
-      codeStr = "Software" if code == -1 else "Hardware #{0}".format(code)
+      self._isSoft = True if code == -1 else False
+      codeStr = "Software" if self._isSoft else "Hardware #{0}".format(code)
     print("{0} I2C bus frequency is {1} kHz".format(codeStr, _freq/1000))
     print("Scanning I2C bus ...")
     self._i2cDevList = self._i2c.scan()
@@ -72,6 +74,14 @@ class I2CBus(object):
   @property
   def deviceAddrList(self):
     return self._i2cDevList
+
+  def start(self):
+    if self._isSoft:
+      self._i2c.start()
+
+  def stop(self):
+    if self._isSoft:
+      self._i2c.stop()
 
   def write(self, buf):
     self._i2c.write(buf)
