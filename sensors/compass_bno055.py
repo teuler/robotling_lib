@@ -1,93 +1,55 @@
 # ----------------------------------------------------------------------------
-# compass_cmps12.py
-# Compass based on CMPS12 tilt-compensated compass driver
-# For details, see http://www.robot-electronics.co.uk/files/cmps12.pdf
+# compass_bno055.py
+# Compass based on BNO055 9-DoF MNU driver
 #
 # The MIT License (MIT)
 # Copyright (c) 2018 Thomas Euler
-# 2018-10-30, v1
-# 2019-05-06, `getPitchRoll` now returns 4-element tuple, with a -1 at
-#             position 1 to be compatible with the data format returned
-#             by `getHeading3D`
-# 2019-12-21, native code generation added (requires MicroPython >=1.12)
+# 2020-09-20, v1
 # ----------------------------------------------------------------------------
-try:
-  import struct
-except ImportError:
-  import ustruct as struct
-from math import radians
-from micropython import const
+#from math import radians
+#from micropython import const
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.sensors.sensor_base import SensorBase
-import robotling_lib.robotling_board as rb
+from robotling_lib.driver.bno055 import BNO055, _ADDRESS_BNO055
 
-__version__ = "0.1.1.0"
-CHIP_NAME   = "CMPS12"
+__version__ = "0.1.0.0"
+CHIP_NAME   = "BNO055"
 
 # pylint: disable=bad-whitespace
-_ADDRESS_CMPS12            = const(0x60)  # (0xD0 >> 1)
-
-# Compass registers
-_REG_CMD                   = const(0x00)
-_REG_BEARING_8BIT          = const(0x01) # 0-255 for a full circle
-_REG_BEARING_16BIT_HB      = const(0x02) # 0-3599, w/next
-_REG_BEARING_16BIT_LB      = const(0x03)
-_REG_PITCH_8BIT_ANGLE      = const(0x04) # signed byte, +/- 90°
-_REG_ROLL_8BIT_ANGLE       = const(0x05) # signed byte, +/- 90°
-_REG_MAG_X_RAW_HB          = const(0x06) # 16 bit signed int, w/next
-_REG_MAG_X_RAW_LB          = const(0x07)
-_REG_MAG_Y_RAW_HB          = const(0x08) # 16 bit signed int, w/next
-_REG_MAG_Y_RAW_LB          = const(0x09)
-_REG_MAG_Z_RAW_HB          = const(0x0A) # 16 bit signed int, w/next
-_REG_MAG_Z_RAW_LB          = const(0x0B)
-_REG_ACCEL_X_RAW_HB        = const(0x0C) # 16 bit signed int, w/next
-_REG_ACCEL_X_RAW_LB        = const(0x0D)
-_REG_ACCEL_Y_RAW_HB        = const(0x0E) # 16 bit signed int, w/next
-_REG_ACCEL_Y_RAW_LB        = const(0x0F)
-_REG_ACCEL_Z_RAW_HB        = const(0x10) # 16 bit signed int, w/next
-_REG_ACCEL_Z_RAW_LB        = const(0x11)
-_REG_GYRO_X_RAW_HB         = const(0x12) # 16 bit signed int, w/next
-_REG_GYRO_X_RAW_LB         = const(0x13)
-_REG_GYRO_Y_RAW_HB         = const(0x14) # 16 bit signed int, w/next
-_REG_GYRO_Y_RAW_LB         = const(0x15)
-_REG_GYRO_Z_RAW_HB         = const(0x16) # 16 bit signed int, w/next
-_REG_GYRO_Z_RAW_LB         = const(0x17)
-_REG_TEMP_DEG_HB           = const(0x18) # in degrees°, w/next
-_REG_TEMP_DEG_LB           = const(0x19)
-_REG_BEARING_16BIT_BNO_HB  = const(0x1A) # 0-5759, /16=°, w/next
-_REG_BEARING_16BIT_BNO_LB  = const(0x1B)
-_REG_PITCH_16BIT_ANGLE_HB  = const(0x1C) # 16bit signed int, +/- 180°, w/next
-_REG_PITCH_16BIT_ANGLE_LB  = const(0x1D)
-_REG_CALIB_STATE           = const(0x1E) # Calibration state, 0=not, 3=fully
+# ...
+# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class Compass(SensorBase):
-  """Compass class that uses the tilt-compensated CMPS12 breakout."""
+  """Compass class that uses the 9-DoF MNU BNO055 breakout."""
 
   def __init__(self, i2c):
     """ Requires already initialized I2C bus instance.
     """
     self._i2c = i2c
+    self._BNO055 = None
     self._isReady = False
     self._type = "Compass w/ tilt-compensation"
+    self._heading = 0.0
+    self._pitch = 0.0
+    self._roll = 0.0
     super().__init__(None, 0)
 
     addrList = self._i2c.deviceAddrList
-    if (_ADDRESS_CMPS12 in addrList):
-      # Get version and initialize
-      buf = bytearray(1)
-      self._read_bytes(_ADDRESS_CMPS12, _REG_CMD, buf)
-      self._version = buf[0]
-      self._heading = 0.0
-      self._pitch = 0.0
-      self._roll = 0.0
-      self._isReady = True
+    if (_ADDRESS_BNO055 in addrList):
+      # Initialize
+      try:
+        self._BNO055 = BNO055(i2c, _ADDRESS_BNO055)
+        self._isReady = True
+      except RuntimeError:
+        pass
 
     cn =  "{0}_v{1}".format(CHIP_NAME, self._version)
     print("[{0:>12}] {1:35} ({2}): {3}"
           .format(cn, self._type, __version__,
                   "ok" if self._isReady else "FAILED"))
 
+****
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   #@timed_function
   @micropython.native

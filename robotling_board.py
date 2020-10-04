@@ -19,7 +19,7 @@ except ImportError:
 __version__ = "0.1.3.0"
 
 SPI_FRQ    = const(4000000)
-I2C_FRQ    = const(100000) #400000
+I2C_FRQ    = const(400000)
 
 # I2C devices, maximal clock frequencies:
 # AMG88XX (Infrared Array Sensor “Grid-EYE”)  <= 400 KHz
