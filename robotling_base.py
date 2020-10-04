@@ -7,6 +7,7 @@
 # Copyright (c) 2020 Thomas Euler
 # 2020-09-04, v1
 # ----------------------------------------------------------------------------
+import gc
 from micropython import const
 from robotling_lib.misc.helpers import TimeTracker
 
@@ -14,7 +15,8 @@ from robotling_lib.platform.platform import platform
 if (platform.ID == platform.ENV_ESP32_UPY or
     platform.ID == platform.ENV_ESP32_TINYPICO):
   import time
-elif platform.ID == platform.ENV_CPY_SAM51:
+elif (platform.ID == platform.ENV_CPY_SAM51 or
+      platform.ID == platform.ENV_CPY_NRF52):
   import robotling_lib.platform.m4ex.time as time
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
@@ -85,6 +87,7 @@ class RobotlingBase(object):
     """ To be called at the beginning of the update function
     """
     self._spinTracker.reset()
+    gc.collect()
 
   def updateEnd(self):
     """ To be called at the end of the update function

@@ -12,7 +12,6 @@ except NameError:
   ModuleNotFoundError = ImportError
 try:
   # Micropython imports
-  import select
   import array
   from micropython import const
   from robotling_lib.misc.helpers import timed_function
@@ -20,6 +19,9 @@ try:
   if (platform.ID == platform.ENV_ESP32_UPY or
       platform.ID == platform.ENV_ESP32_TINYPICO):
     from machine import UART
+  elif (platform.ID == platform.ENV_CPY_SAM51 or
+        platform.ID == platform.ENV_CPY_NRF52):
+    from busio import UART
   else:
     print("ERROR: No matching hardware libraries in `platform`.")
 except ModuleNotFoundError:
@@ -368,16 +370,21 @@ class RMsgUARTMPy(RMsg):
     super().__init__()
     self._uart = uart
     self.isClient = isClient
-    self.pollObj = select.poll()
-    self.pollObj.register(self._uart, select.POLLIN)
+    try:
+      import select
+      self.pollObj = select.poll()
+      self.pollObj.register(self._uart, select.POLLIN)
+      self._poll = self._poll_via_select
+    except ImportError:
+      self.pollObj = None
+      self._poll = None
     self.write = self._write
     self.read = self._read
     self.readline = self._readline
     self.any = self._any
-    self._poll = self._poll_via_select
     self._portType = PortType.UART_MPY
 
-  @property
+  @property 
   def isConnected(self):
      return self.self._uart is not None
 

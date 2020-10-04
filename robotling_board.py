@@ -50,6 +50,11 @@ elif platform.ID == platform.ENV_CPY_SAM51:
   # SAM51 board w/CircuitPython
   from robotling_lib.platform.board_robotling_1_3_sam51 import *
 
+elif platform.ID == platform.ENV_CPY_NRF52:
+  # NRF52 board w/CircuitPython
+  if BOARD_VER == 032:
+    from robotling_lib.platform.board_hexapod_0_32_nrf52 import *
+
 else:
   # No fitting board found or wtong board version number
   assert False, "No fitting board found"

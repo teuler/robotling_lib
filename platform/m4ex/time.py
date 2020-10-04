@@ -28,4 +28,7 @@ def sleep_us(dur_us):
 def sleep_ms(dur_ms):
   time_.sleep(dur_ms /1000)
 
+def time():
+  return time_.time()  
+
 # ----------------------------------------------------------------------------
