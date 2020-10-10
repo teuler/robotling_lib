@@ -11,6 +11,7 @@ import gc
 from micropython import const
 from robotling_lib.misc.helpers import TimeTracker
 
+import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.platform.platform import platform
 if (platform.ID == platform.ENV_ESP32_UPY or
     platform.ID == platform.ENV_ESP32_TINYPICO):
@@ -19,7 +20,7 @@ elif (platform.ID == platform.ENV_CPY_SAM51 or
       platform.ID == platform.ENV_CPY_NRF52):
   import robotling_lib.platform.m4ex.time as time
 else:
-  print("ERROR: No matching hardware libraries in `platform`.")
+  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
 __version__      = "0.1.0.0"
 

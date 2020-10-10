@@ -17,6 +17,7 @@ except ImportError:
   import ustruct as struct
 from math import radians
 from micropython import const
+import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.sensors.sensor_base import SensorBase
 import robotling_lib.robotling_board as rb
@@ -84,9 +85,10 @@ class Compass(SensorBase):
       self._isReady = True
 
     cn =  "{0}_v{1}".format(CHIP_NAME, self._version)
-    print("[{0:>12}] {1:35} ({2}): {3}"
+    c = ansi.GREEN if self._isReady else ansi.RED
+    print(c +"[{0:>12}] {1:35} ({2}): {3}"
           .format(cn, self._type, __version__,
-                  "ok" if self._isReady else "FAILED"))
+                  "ok" if self._isReady else "NOT FOUND") +ansi.BLACK)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   #@timed_function

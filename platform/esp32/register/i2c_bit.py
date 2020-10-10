@@ -55,18 +55,18 @@ class RWBit:
       self.byte = reg_width -(bit //8)
 
   def __get__(self, obj, objtype=None):
-    obj._i2c.write_then_readinto(obj._i2cAddr, self.buf, self.buf, out_end=1,
-                                 in_start=1, stop_=False)
+    obj._i2c_device.write_then_readinto(obj._i2c_addr, self.buf, self.buf,
+                                        out_end=1, in_start=1, stop_=False)
     return bool(self.buf[self.byte] & self.bit_mask)
 
   def __set__(self, obj, value):
-    obj._i2c.write_then_readinto(obj._i2cAddr, self.buf, self.buf, out_end=1,
-                                 in_start=1, stop_=False)
+    obj._i2c_device.write_then_readinto(obj._i2c_addr, self.buf, self.buf,
+                                        out_end=1, in_start=1, stop_=False)
     if value:
       self.buf[self.byte] |= self.bit_mask
     else:
       self.buf[self.byte] &= ~self.bit_mask
-    obj._i2c.writeto(obj._i2cAddr, self.buf)
+    obj._i2c_device.writeto(obj._i2c_addr, self.buf)
 
 
 class ROBit(RWBit):

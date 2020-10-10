@@ -26,6 +26,7 @@ except ImportError:
     import robotling_lib.misc.blob as blob
     BLOB_SUPPORT = 2
 
+import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.sensors.sensor_base import CameraBase
 
 __version__ = "0.1.2.0"
@@ -45,10 +46,11 @@ class Camera(CameraBase):
       self._blobList = []
       self._dtMean = 0
 
+    c = ansi.GREEN if driver.isReady else ansi.RED
     s = "{0} ({1})".format(self._type, ["C++", "ulab", "Python"][BLOB_SUPPORT])
-    print("[{0:>12}] {1:35} ({2}): {3}"
+    print(c +"[{0:>12}] {1:35} ({2}): {3}"
           .format(driver.name, s, __version__,
-                  "ok" if driver._isReady else "FAILED"))
+                  "ok" if driver.isReady else "FAILED") +ansi.BLACK)
 
   def detectBlobs(self, kernel=None, nsd=1.0):
     """ Acquire image and detect blobs, using filter (`kernel`), and threshold
