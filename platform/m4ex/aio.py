@@ -33,4 +33,8 @@ class AnalogIn(object):
   def max_adc(self):
     return MAX_ADC
 
+  @property
+  def reference_voltage(self):
+    return self._pin.reference_voltage
+
 # ----------------------------------------------------------------------------

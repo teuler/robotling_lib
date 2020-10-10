@@ -31,7 +31,13 @@
 # SOFTWARE.
 # ----------------------------------------------------------------------------
 from micropython import const
-from framebuf import FrameBuffer, GS4_HMSB
+import robotling_lib.misc.ansi_color as ansi
+from robotling_lib.platform.platform import platform
+if (platform.ID == platform.ENV_ESP32_UPY or
+    platform.ID == platform.ENV_ESP32_TINYPICO):
+  from framebuf import FrameBuffer, GS4_HMSB
+else:
+  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
 __version__ = "0.1.0.0"
 CHIP_NAME   = "ssd1327"
@@ -205,15 +211,17 @@ class SSD1327:
 # ----------------------------------------------------------------------------
 class SSD1327_I2C(SSD1327):
   def __init__(self, w, h, i2c, addr=_ADDR_SSD1327, ext_vcc=False):
-    self._i2c = i2c
-    self._addr = addr
+    self.i2c_device = i2c
+    self._i2c_addr = addr
     super().__init__(w, h, ext_vcc)
 
   def __write_cmd(self, cmd):
-    self._i2c.writeto(self._addr, bytearray([REG_CMD, cmd]))
+    with self.i2c_device as ic2:
+      i2c.writeto(self._i2c_addr, bytearray([REG_CMD, cmd]))
 
   def __write_data(self, buf):
-    self._i2c.writeto(self._addr, buf)
+    with self.i2c_device as ic2:
+      i2c.writeto(self._i2c_addr, buf)
 
   '''
   def rotate(self, rotate):

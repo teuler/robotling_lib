@@ -44,12 +44,15 @@ from robotling_lib.platform.platform import platform
 if (platform.ID == platform.ENV_ESP32_UPY or
     platform.ID == platform.ENV_ESP32_TINYPICO):
   import time
-  from robotling_lib.platform.esp32.register.i2c_struct import Struct, UnaryStruct
-elif platform.ID == platform.ENV_CPY_SAM51:
+  from robotling_lib.platform.esp32.register.i2c_struct \
+    import Struct, UnaryStruct
+elif (platform.ID == platform.ENV_CPY_SAM51 or
+      platform.ID == platform.ENV_CPY_NRF52):
   import robotling_lib.platform.m4ex.time as time
-  from robotling_lib.platform.m4ex.i2c_struct import Struct, UnaryStruct
+  from robotling_lib.platform.m4ex.circuitpython.register.i2c_struct \
+    import Struct, UnaryStruct
 else:
-  print("ERROR: No matching hardware libraries in `platform`.")
+  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
 __version__ = "0.1.0.0"
 CHIP_NAME   = "bno055"
@@ -199,7 +202,7 @@ class BNO055Base(object):
   def __init__(self, i2c):
     """ Requires already initialized I2C bus instance.
     """
-    self._i2c = i2c
+    self.i2c_device = i2c
     self._isReady = False
     chip_id = self._read_register(_ID_REGISTER)
     if chip_id != _CHIP_ID:
@@ -211,9 +214,9 @@ class BNO055Base(object):
     self.accel_range = ACCEL_4G
     self.gyro_range = GYRO_2000_DPS
     self.magnet_rate = MAGNET_20HZ
-    time.sleep(0.01)
+    time.sleep_ms(10)
     self.mode = NDOF_MODE
-    time.sleep(0.01)
+    time.sleep_ms(10)
 
     self._isReady = True
     c = ansi.GREEN if self._isReady else ansi.RED
@@ -231,7 +234,7 @@ class BNO055Base(object):
     except OSError:
       pass
     # Wait for the chip to reset (650 ms typ.)
-    time.sleep(0.7)
+    time.sleep_ms(700)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @property
@@ -346,10 +349,10 @@ class BNO055Base(object):
   @mode.setter
   def mode(self, new_mode):
     self._write_register(_MODE_REGISTER, CONFIG_MODE)  # Empirically necessary
-    time.sleep(0.02)  # Datasheet table 3.6
+    time.sleep_ms(20)  # Datasheet table 3.6
     if new_mode != CONFIG_MODE:
       self._write_register(_MODE_REGISTER, new_mode)
-      time.sleep(0.01)  # Table 3.6
+      time.sleep_ms(10)  # Table 3.6
 
   @property
   def calibration_status(self):
@@ -387,7 +390,7 @@ class BNO055Base(object):
     self._write_register(_PAGE_REGISTER, 0x00)
     self._write_register(_TRIGGER_REGISTER, 0x80 if value else 0x00)
     self.mode = last_mode
-    time.sleep(0.01)
+    time.sleep_ms(10)
 
   @property
   def temperature(self):
@@ -704,16 +707,18 @@ class BNO055(BNO055Base):
   radius_magnetometer = _ModeStruct(_RADIUS_MAGNET_REGISTER, "<h", CONFIG_MODE)
 
   def __init__(self, i2c, address=_ADDRESS_BNO055):
-    self._i2cAddr = address
+    self._i2c_addr = address
     super().__init__(i2c)
 
   def _write_register(self, register, value):
     buf = bytearray([register, value])
-    self._i2c.writeto(self._i2cAddr, buf)
+    with self.i2c_device as i2c:
+      i2c.writeto(self._i2c_addr, buf)
 
   def _read_register(self, register):
     buf = bytearray([register, 0])
-    self._i2c.write_then_readinto(self._i2cAddr, buf, buf, out_end=1, in_start=1)
+    with self.i2c_device as i2c:
+      i2c.write_then_readinto(self._i2c_addr, buf, buf, out_end=1, in_start=1)
     return buf[1]
 
 # ----------------------------------------------------------------------------

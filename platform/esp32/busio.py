@@ -9,6 +9,7 @@
 # 2018-09-21, v1
 # 2019-12-21, v1.1 - hardware I2C bus possible
 # 2020-08-09, v1.2 - `UART` is inherited from `machine`
+# 2020-10-09, v1.3 - `I2CBus` use with `with`-statement
 # ----------------------------------------------------------------------------
 from os import uname
 from machine import SPI, Pin, I2C
@@ -104,5 +105,11 @@ class I2CBus(object):
     buf = bytearray(bufi[in_start:in_end])
     self._i2c.readfrom_into(addr, buf)
     bufi[in_start:in_end] = buf
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    return False
 
 # ----------------------------------------------------------------------------

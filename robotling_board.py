@@ -42,6 +42,15 @@ if platform.ID == platform.ENV_ESP32_UPY:
   elif BOARD_VER == 032:
     from robotling_lib.platform.board_hexapod_0_32_huzzah32 import *
 
+  # The battery is connected to the pin via a voltage divider (1/2), and thus
+  # an effective voltage range of up to 7.8V (ATTN_11DB, 3.9V); the resolution
+  # is 12 bit (WITDH_12BIT, 4096):
+  # V = adc /4096 *2 *3.9 *0.901919 = 0.001717522
+  # (x2 because of voltage divider, x3.9 for selected range (ADC.ATTN_11DB)
+  #  and x0.901919 as measured correction factor)
+  BAT_N_PER_V   = 0.001717522
+
+
 elif platform.ID == platform.ENV_ESP32_TINYPICO:
   # TinyPICO ESP32 board w/MicroPython
   from robotling_lib.platform.board_hexapod_0_31_tinypico import *
@@ -60,13 +69,21 @@ else:
   assert False, "No fitting board found"
 
 # ----------------------------------------------------------------------------
-# The battery is connected to the pin via a voltage divider (1/2), and thus
-# an effective voltage range of up to 7.8V (ATTN_11DB, 3.9V); the resolution
-# is 12 bit (WITDH_12BIT, 4096):
-# V = adc /4096 *2 *3.9 *0.901919 = 0.001717522
-# (x2 because of voltage divider, x3.9 for selected range (ADC.ATTN_11DB)
-#  and x0.901919 as measured correction factor)
-BAT_N_PER_V   = 0.001717522
+if platform.ID in [platform.ENV_ESP32_TINYPICO, platform.ENV_ESP32_UPY]:
+  # The battery is connected to the pin via a voltage divider (1/2), and thus
+  # an effective voltage range of up to 7.8V (ATTN_11DB, 3.9V); the resolution
+  # is 12 bit (WITDH_12BIT, 4096):
+  # V = adc /4096 *2 *3.9 *0.901919 = 0.001717522
+  # (x2 because of voltage divider, x3.9 for selected range (ADC.ATTN_11DB)
+  #  and x0.901919 as measured correction factor)
+  def battery_convert(v):
+    return v *0.001717522
+
+elif platform.ID == platform.ENV_CPY_NRF52:
+  # For 3.3V ADC range and 16-bit ADC resolution = 3000mV/65536
+  # 150K + 150K voltage divider on VBAT => compensation factor 2.0
+  def battery_convert(v):
+    return v *3.3/65536 *2
 
 # ----------------------------------------------------------------------------
 # Error codes

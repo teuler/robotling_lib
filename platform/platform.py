@@ -17,8 +17,7 @@ class Platform(object):
 
   ENV_UNKNOWN        = const(0)
   ENV_ESP32_UPY      = const(1)
-  ENV_ESP32_UPY_LOBO = const(2)
-  ENV_ESP32_TINYPICO = const(3)
+  ENV_ESP32_TINYPICO = const(2)
   ENV_CPY_SAM51      = const(4)
   ENV_CPY_NRF52      = const(5)
 
@@ -32,8 +31,6 @@ class Platform(object):
         self._envID = ENV_ESP32_TINYPICO
       else:
         self._envID = ENV_ESP32_UPY
-    if self.sysInfo[0] == "esp32_LoBo":
-      self._envID = ENV_ESP32_UPY_LOBO
     if self.sysInfo[0] == "samd51":
       self._envID = ENV_CPY_SAM51
     if self.sysInfo[0] == "nrf52":
@@ -60,7 +57,7 @@ class Platform(object):
 
   @property
   def language(self):
-    if self._envID in [ENV_ESP32_UPY, ENV_ESP32_UPY_LOBO, ENV_ESP32_TINYPICO]:
+    if self._envID in [ENV_ESP32_UPY, ENV_ESP32_TINYPICO]:
       return "MicroPython"
     elif self._envID in [ENV_CPY_SAM51, ENV_CPY_NRF52]:
       return "CircuitPython"

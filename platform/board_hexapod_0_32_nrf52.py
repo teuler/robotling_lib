@@ -33,11 +33,10 @@ BAUD       = 115200
 
 # -> Tera EvoMini -----
 # UART 2
-'''
 UART2_CH   = const(2)
-TX2        = board.D14
-RX2        = board.D4
-'''
+TX2        = board.D5
+RX2        = board.A5
+
 # DIO -----------------
 '''
 DIO0       = board.A0

@@ -22,7 +22,8 @@ if platform.ID == platform.ENV_ESP32_UPY:
   from robotling_lib.platform.esp32.busio import UART
   from time import sleep_ms
   import select
-elif platform.ID == platform.ENV_CPY_SAM51:
+elif (platform.ID == platform.ENV_CPY_SAM51 or
+      platform.ID == platform.ENV_CPY_NRF52):
   from robotling_lib.platform.m4ex.busio import UART
   from robotling_lib.platform.m4ex.time import sleep_ms
 else:

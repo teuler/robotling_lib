@@ -63,7 +63,7 @@ class _BoundStructArray:
     def __getitem__(self, index):
         buf = self._get_buffer(index)
         with self.obj.i2c_device as i2c:
-            i2c.write_then_readinto(buf, buf,
+            i2c.write_then_readinto(obj._i2c_addr, buf, buf,
                                     out_end=1, in_start=1)
         return struct.unpack_from(self.format, buf, 1)  # offset=1
 
@@ -71,7 +71,7 @@ class _BoundStructArray:
         buf = self._get_buffer(index)
         struct.pack_into(self.format, buf, 1, *value)
         with self.obj.i2c_device as i2c:
-            i2c.write(buf)
+            i2c.write(obj._i2c_addr, buf)
 
     def __len__(self):
         return self.count

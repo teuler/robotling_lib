@@ -8,12 +8,13 @@
 # Copyright (c) 2018 Thomas Euler
 # 2018-12-09, v1
 # 2020-08-09, v1.1 - `UART` is inherited from `busio`
+# 2020-10-09, v1.2 - `I2CBus` use with `with`-statement
 # ----------------------------------------------------------------------------
 from micropython import const
 from busio import SPI, I2C
 from busio import UART as _UART
 
-__version__ = "0.1.1.0"
+__version__ = "0.1.2.0"
 
 # ----------------------------------------------------------------------------
 class SPIBus(object):
@@ -79,18 +80,26 @@ class I2CBus(object):
     return self._i2cDevList
 
   def writeto(self, addr, buf, stop_=True):
-    if self._i2c.try_lock():
-      try:
-        self._i2c.writeto(addr, buf, stop=stop_)
-      finally:
-        self._i2c.unlock()
+    self._i2c.writeto(addr, buf)
 
   def readfrom_into(self, addr, buf):
-    if self._i2c.try_lock():
-      try:
-        self._i2c.readfrom_into(addr, buf)
-      finally:
-        self._i2c.unlock()
+    self._i2c.readfrom_into(addr, buf)
+
+  def write_then_readinto(self, addr, bufo, bufi, out_start=0, out_end=None,
+                          in_start=0, in_end=None, stop_=True):
+    self._i2c.writeto(addr, bufo[out_start:out_end])
+    buf = bytearray(bufi[in_start:in_end])
+    self._i2c.readfrom_into(addr, buf)
+    bufi[in_start:in_end] = buf
+
+  def __enter__(self):
+    while not self._i2c.try_lock():
+      pass
+    return self
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    self._i2c.unlock()
+    return False
 
 # ----------------------------------------------------------------------------
 class UART(object):
@@ -110,7 +119,7 @@ class UART(object):
     return self._uart.write(buf)
 
   def any(self):
-    return self._uart.in_waiting()
+    return self._uart.in_waiting
 
   def deinit(self):
     if self._uart is not None:
