@@ -11,16 +11,16 @@ import array
 import time
 from robotling_lib.misc.helpers import timed_function
 
+import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
+if platform.languageID == platform.LNG_MICROPYTHON:
   import robotling_lib.platform.esp32.dio as dio
   from machine import Timer
   import ulab as np
   from micropython import alloc_emergency_exception_buf
   alloc_emergency_exception_buf(100)
 else:
-  print("ERROR: No matching hardware libraries in `platform`.")
+  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
 __version__       = "0.1.1.0"
 RATE_MS           = const(20)

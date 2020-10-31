@@ -43,7 +43,7 @@ NEOPIX     = board.D15
 
 # Other ---------------
 RED_LED    = board.LED
-GREEN_LED  = board.D21
+YELLOW_LED = board.D21
 ADC_BAT    = board.BAT
 # pylint: enable=bad-whitespace
 

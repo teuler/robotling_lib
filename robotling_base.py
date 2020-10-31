@@ -13,11 +13,9 @@ from robotling_lib.misc.helpers import TimeTracker
 
 import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
+if platform.languageID == platform.LNG_MICROPYTHON:
   import time
-elif (platform.ID == platform.ENV_CPY_SAM51 or
-      platform.ID == platform.ENV_CPY_NRF52):
+elif platform.languageID == platform.LNG_CIRCUITPYTHON:
   import robotling_lib.platform.m4ex.time as time
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
@@ -48,12 +46,17 @@ class RobotlingBase(object):
   Properties:
   ----------
   - memory         : Returns allocated and free memory as tuple
+
+  Internal methods:
+  ----------------
+  - _pulseNeoPixel()
+    Update pulsing, if enabled
   """
   MIN_UPDATE_PERIOD_MS = const(20)  # Minimal time between update() calls
   APPROX_UPDATE_DUR_MS = const(8)   # Approx. duration of the update/callback
   HEARTBEAT_STEP_SIZE  = const(5)   # Step size for pulsing NeoPixel
 
-  def __init__(self):
+  def __init__(self, NeoPixel=False, MCP3208=False):
     """ Initialize spin management
     """
     # Get the current time in seconds
@@ -63,6 +66,27 @@ class RobotlingBase(object):
     # Initialize some variables
     self.ID = platform.GUID
     self.Tele = None
+    self._MCP3208 = None
+    self._NPx = None
+
+    if MCP3208:
+      # Initialize analog sensor driver
+      import robotling_lib.driver.mcp3208 as mcp3208
+      self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.MOSI, rb.MISO)
+      self._MCP3208 = mcp3208.MCP3208(self._SPI, rb.CS_ADC)
+      
+    if NeoPixel:
+      # Initialize Neopixel (connector)
+      if platform.languageID == platform.LNG_MICROPYTHON:
+        from robotling_lib.platform.esp32.neopixel import NeoPixel
+      elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+        from robotling_lib.platform.m4ex.neopixel import NeoPixel
+      self._NPx = NeoPixel(rb.NEOPIX, 1)
+      self._NPx0_RGB = bytearray([0]*3)
+      self._NPx0_curr = array.array("i", [0,0,0])
+      self._NPx0_step = array.array("i", [0,0,0])
+      self.NeoPixelRGB = 0
+      print("[{0:>12}] {1:35}".format("Neopixel", "ready"))
 
     # Initialize spin function-related variables
     self._spin_period_ms = 0
@@ -88,7 +112,13 @@ class RobotlingBase(object):
     """ To be called at the beginning of the update function
     """
     self._spinTracker.reset()
+    if self._MCP3208:
+      self._MCP3208.update()
+    if self._NPx:
+      self._pulseNeoPixel()
+    '''
     gc.collect()
+    '''
 
   def updateEnd(self):
     """ To be called at the end of the update function
@@ -189,5 +219,65 @@ class RobotlingBase(object):
     dur_ms = self._spinTracker.period_ms
     print("Performance: spin: {0:6.3f}ms @ {1:.1f}Hz ~{2:.0f}%"
           .format(avg_ms, 1000/dur_ms, avg_ms /dur_ms *100))
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  @property
+  def NeoPixelRGB(self):
+    return self._NPx_RGB
+
+  @NeoPixelRGB.setter
+  def NeoPixelRGB(self, value):
+    """ Set color of NeoPixel at RBL_NEOPIX by assigning RGB values (and
+        stop pulsing, if running)
+    """
+    try:
+      rgb = bytearray([value[0], value[1], value[2]])
+    except TypeError:
+      rgb = bytearray([value]*3)
+    self._NPx.set(rgb, 0, True)
+    self._NPx0_pulse = False
+
+  def startPulseNeoPixel(self, value):
+    """ Set color of NeoPixel at RBL_NEOPIX and enable pulsing
+    """
+    try:
+      rgb = bytearray([value[0], value[1], value[2]])
+    except TypeError:
+      rgb = bytearray([value]*3)
+    if (rgb != self._NPx0_RGB) or not(self._NPx0_pulse):
+      # New color and start pulsing
+      c = self._NPx0_curr
+      s = self._NPx0_step
+      c[0] = rgb[0]
+      s[0] = int(rgb[0] /self.HEARTBEAT_STEP_SIZE)
+      c[1] = rgb[1]
+      s[1] = int(rgb[1] /self.HEARTBEAT_STEP_SIZE)
+      c[2] = rgb[2]
+      s[2] = int(rgb[2] /self.HEARTBEAT_STEP_SIZE)
+      self._NPx0_RGB = rgb
+      self._NPx.set(rgb, 0, True)
+      self._NPx0_pulse = True
+      self._NPx0_fact = 1.0
+
+  def dimNeoPixel(self, factor=1.0):
+    self._NPx0_fact = max(min(1, factor), 0)
+
+  def _pulseNeoPixel(self):
+    """ Update pulsing, if enabled
+    """
+    if self._NPx0_pulse:
+      rgb = self._NPx0_RGB
+      for i in range(3):
+        self._NPx0_curr[i] += self._NPx0_step[i]
+        if self._NPx0_curr[i] > (rgb[i] -self._NPx0_step[i]):
+          self._NPx0_step[i] *= -1
+        if self._NPx0_curr[i] < abs(self._NPx0_step[i]):
+          self._NPx0_step[i] = abs(self._NPx0_step[i])
+        if self._NPx0_fact < 1.0:
+          self._NPx0_curr[i] = int(self._NPx0_curr[i] *self._NPx0_fact)
+      self._NPx.set(self._NPx0_curr, 0, True)
+      if not self._DS == None:
+        self._DS[random.randint(0, 71)] = self._NPx0_curr
+        self._DS.show()
 
 # ----------------------------------------------------------------------------

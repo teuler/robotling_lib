@@ -5,11 +5,12 @@
 # The MIT License (MIT)
 # Copyright (c) 2018 Thomas Euler
 # 2018-09-21, v1
+# 2018-09-21, v1.1, language ID added
 # ----------------------------------------------------------------------------
 from os import uname
 from micropython import const
 
-__version__ = "0.1.0.0"
+__version__ = "0.1.1.0"
 
 # ----------------------------------------------------------------------------
 class Platform(object):
@@ -20,6 +21,10 @@ class Platform(object):
   ENV_ESP32_TINYPICO = const(2)
   ENV_CPY_SAM51      = const(4)
   ENV_CPY_NRF52      = const(5)
+
+  LNG_UNKNOWN        = const(0)
+  LNG_MICROPYTHON    = const(1)
+  LNG_CIRCUITPYTHON  = const(2)
 
   def __init__(self):
     # Determine distribution, board type and GUID
@@ -35,6 +40,13 @@ class Platform(object):
       self._envID = ENV_CPY_SAM51
     if self.sysInfo[0] == "nrf52":
       self._envID = ENV_CPY_NRF52
+
+    if self._envID in [ENV_ESP32_UPY, ENV_ESP32_TINYPICO]:
+      self._lngID = LNG_MICROPYTHON
+    elif self._envID in [ENV_CPY_SAM51, ENV_CPY_NRF52]:
+      self._lngID = LNG_CIRCUITPYTHON
+    else:
+      self._lngID = LNG_UNKNOWN
 
     try:
       from machine import unique_id
@@ -57,12 +69,11 @@ class Platform(object):
 
   @property
   def language(self):
-    if self._envID in [ENV_ESP32_UPY, ENV_ESP32_TINYPICO]:
-      return "MicroPython"
-    elif self._envID in [ENV_CPY_SAM51, ENV_CPY_NRF52]:
-      return "CircuitPython"
-    else:
-      return "n/a"
+    return ["MicroPython", "CircuitPython", "n/a"][self._lngID]
+
+  @property
+  def languageID(self):
+    return self._lngID
 
 # ----------------------------------------------------------------------------
 platform = Platform()
