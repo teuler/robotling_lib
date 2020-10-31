@@ -2,17 +2,18 @@
 # dio.py
 #
 # Basic digital pin support
-# (for CircuitPython, M4 express)
+# (for CircuitPython)
 #
 # The MIT License (MIT)
-# Copyright (c) 2018 Thomas Euler
+# Copyright (c) 2018-2020 Thomas Euler
 # 2018-11-25, v1
+# 2020-10-31, v1.1, generally CircuitPython
 # ----------------------------------------------------------------------------
 from micropython import const
 from digitalio import DigitalInOut, Pull, Direction
 from pulseio import PWMOut as PWMOut_
 
-__version__ = "0.1.0.0"
+__version__ = "0.1.1.0"
 
 PULL_UP      = const(0)
 PULL_DOWN    = const(1)

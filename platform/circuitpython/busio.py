@@ -2,19 +2,20 @@
 # busio.py
 #
 # Basic bus support
-# (for CircuitPython, M4 express)
+# (for CircuitPython)
 #
 # The MIT License (MIT)
 # Copyright (c) 2018 Thomas Euler
 # 2018-12-09, v1
-# 2020-08-09, v1.1 - `UART` is inherited from `busio`
-# 2020-10-09, v1.2 - `I2CBus` use with `with`-statement
+# 2020-08-09, v1.1, `UART` is inherited from `busio`
+# 2020-10-09, v1.2, `I2CBus` use with `with`-statement
+# 2020-10-31, v1.3, generally CircuitPython
 # ----------------------------------------------------------------------------
 from micropython import const
 from busio import SPI, I2C
 from busio import UART as _UART
 
-__version__ = "0.1.2.0"
+__version__ = "0.1.3.0"
 
 # ----------------------------------------------------------------------------
 class SPIBus(object):

@@ -11,20 +11,22 @@
 #                   angle ranges.
 # 2018-12-23, v1.3, max duty cycle bug fixed.
 # 2020-01-01, v1.4, micropython.native
+# 2020-10-31, v1.5, use `languageID` instead of `ID`
 # ----------------------------------------------------------------------------
 import array
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.motors.servo_base import ServoBase
+import robotling_lib.misc.ansi_color as ansi
 
 from robotling_lib.platform.platform import platform
-if platform.ID == platform.ENV_ESP32_UPY:
+if platform.languageID == platform.LNG_MICROPYTHON:
   import robotling_lib.platform.esp32.dio as dio
-elif platform.ID == platform.ENV_CPY_SAM51:
-  import robotling_lib.platform.m4ex.dio as dio
+elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+  import robotling_lib.platform.circuitpython.dio as dio
 else:
-  print("ERROR: No matching hardware libraries in `platform`.")
+  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__      = "0.1.4.0"
+__version__      = "0.1.5.0"
 DEF_RANGE_DEG    = (0, 180)
 DEF_RANGE_US     = (600, 2400)
 

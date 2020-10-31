@@ -6,23 +6,24 @@
 # Copyright (c) 2020 Thomas Euler
 # 2020-01-03, v1
 # 2020-08-02, v1.1 ulab
+# 2020-10-31, v1.2, use `languageID` instead of `ID`
 # ----------------------------------------------------------------------------
 import array
-import time
 from robotling_lib.misc.helpers import timed_function
-
 import robotling_lib.misc.ansi_color as ansi
+
 from robotling_lib.platform.platform import platform
 if platform.languageID == platform.LNG_MICROPYTHON:
   import robotling_lib.platform.esp32.dio as dio
   from machine import Timer
+  import time
   import ulab as np
   from micropython import alloc_emergency_exception_buf
   alloc_emergency_exception_buf(100)
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__       = "0.1.1.0"
+__version__       = "0.1.2.0"
 RATE_MS           = const(20)
 _STEP_ARRAY_MAX   = const(500)
 

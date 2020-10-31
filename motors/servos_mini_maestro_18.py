@@ -5,6 +5,7 @@
 # The MIT License (MIT)
 # Copyright (c) 2020 Thomas Euler
 # 2020-05-01, v1
+# 2020-10-31, v1.2, use `languageID` instead of `ID`
 #
 # The MIT License (MIT)
 # Copyright (c) 2016 Steven L. Jacobs (Maestro Python library)
@@ -33,18 +34,15 @@ import time
 from micropython import const
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.motors.servo_base import ServoBase
+
 import robotling_lib.misc.ansi_color as ansi
-
 from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
+if platform.languageID == platform.LNG_MICROPYTHON:
   from robotling_lib.platform.esp32.busio import UART
-elif platform.ID == platform.ENV_CPY_SAM51:
-  pass
 else:
-  print("ERROR: No matching hardware libraries in `platform`.")
+  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__      = "0.1.0.0"
+__version__      = "0.1.1.0"
 CHIP_NAME        = "minMaestro18"
 CHAN_COUNT       = const(18)
 DEF_RANGE_DEG    = (0, 180)

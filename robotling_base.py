@@ -6,6 +6,7 @@
 # The MIT License (MIT)
 # Copyright (c) 2020 Thomas Euler
 # 2020-09-04, v1
+# 2020-10-31, v1.1, use `languageID` instead of `ID`
 # ----------------------------------------------------------------------------
 import gc
 from micropython import const
@@ -16,11 +17,11 @@ from robotling_lib.platform.platform import platform
 if platform.languageID == platform.LNG_MICROPYTHON:
   import time
 elif platform.languageID == platform.LNG_CIRCUITPYTHON:
-  import robotling_lib.platform.m4ex.time as time
+  import robotling_lib.platform.circuitpython.time as time
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__      = "0.1.0.0"
+__version__      = "0.1.1.0"
 
 # ----------------------------------------------------------------------------
 class RobotlingBase(object):
@@ -74,7 +75,7 @@ class RobotlingBase(object):
       import robotling_lib.driver.mcp3208 as mcp3208
       self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.MOSI, rb.MISO)
       self._MCP3208 = mcp3208.MCP3208(self._SPI, rb.CS_ADC)
-      
+
     if NeoPixel:
       # Initialize Neopixel (connector)
       if platform.languageID == platform.LNG_MICROPYTHON:

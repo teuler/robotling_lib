@@ -50,7 +50,6 @@ if platform.ID == platform.ENV_ESP32_UPY:
   #  and x0.901919 as measured correction factor)
   BAT_N_PER_V   = 0.001717522
 
-
 elif platform.ID == platform.ENV_ESP32_TINYPICO:
   # TinyPICO ESP32 board w/MicroPython
   from robotling_lib.platform.board_hexapod_0_31_tinypico import *
