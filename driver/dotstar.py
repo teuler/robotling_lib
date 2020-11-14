@@ -35,13 +35,12 @@
 # ----------------------------------------------------------------------------
 import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
+if platform.languageID == platform.LNG_MICROPYTHON:
   import robotling_lib.platform.esp32.dio as dio
   import robotling_lib.platform.esp32.busio as busio
-elif platform.ID == platform.ENV_CPY_SAM51:
-  import robotling_lib.platform.m4ex.dio as dio
-  import robotling_lib.platform.m4ex.busio as busio
+elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+  import robotling_lib.platform.circuitpython.dio as dio
+  import robotling_lib.platform.circuitpython.busio as busio
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
 

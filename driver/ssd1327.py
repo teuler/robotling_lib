@@ -33,8 +33,7 @@
 from micropython import const
 import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
+if platform.languageID == platform.LNG_MICROPYTHON:
   from framebuf import FrameBuffer, GS4_HMSB
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)

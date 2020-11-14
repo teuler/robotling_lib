@@ -13,10 +13,10 @@ from micropython import const
 from robotling_lib.misc.helpers import timed_function
 
 from robotling_lib.platform.platform import platform
-if platform.ID == platform.ENV_ESP32_UPY:
+if platform.languageID == platform.LNG_MICROPYTHON:
   import robotling_lib.platform.esp32.dio as dio
-elif platform.ID == platform.ENV_CPY_SAM51:
-  import robotling_lib.platform.m4ex.dio as dio
+elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+  import robotling_lib.platform.circuitpython.dio as dio
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
 

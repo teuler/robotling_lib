@@ -9,10 +9,12 @@
 # 2020-10-31, v1.1, use `languageID` instead of `ID`
 # ----------------------------------------------------------------------------
 import gc
+import array
 from micropython import const
 from robotling_lib.misc.helpers import TimeTracker
-
 import robotling_lib.misc.ansi_color as ansi
+import robotling_lib.robotling_board as rb
+
 from robotling_lib.platform.platform import platform
 if platform.languageID == platform.LNG_MICROPYTHON:
   import time
@@ -41,12 +43,22 @@ class RobotlingBase(object):
   - spin_while_moving(t_spin_ms=50)
     Call spin frequently while waiting for the current move to finish
 
+  - startPulseNeoPixel()
+    Set color of NeoPixel at RBL_NEOPIX and enable pulsing
+
+  - printReport()
+    Print statistics of the last run into the history
   - powerDown()
     To be called when the robot shuts down; to be overwritten
 
   Properties:
   ----------
   - memory         : Returns allocated and free memory as tuple
+  - NeoPixelRGB    : get and set color (assign r,g,b tuple)
+
+  Internal objects:
+  ----------------
+  - _MCP3208       : 8-channel 12-bit A/C converter driver
 
   Internal methods:
   ----------------
@@ -57,7 +69,7 @@ class RobotlingBase(object):
   APPROX_UPDATE_DUR_MS = const(8)   # Approx. duration of the update/callback
   HEARTBEAT_STEP_SIZE  = const(5)   # Step size for pulsing NeoPixel
 
-  def __init__(self, NeoPixel=False, MCP3208=False):
+  def __init__(self, neoPixel=False, MCP3208=False):
     """ Initialize spin management
     """
     # Get the current time in seconds
@@ -65,8 +77,8 @@ class RobotlingBase(object):
     self._start_s = time.time()
 
     # Initialize some variables
-    self.ID = platform.GUID
-    self.Tele = None
+    self._ID = platform.GUID
+    self._Tele = None
     self._MCP3208 = None
     self._NPx = None
 
@@ -76,18 +88,19 @@ class RobotlingBase(object):
       self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.MOSI, rb.MISO)
       self._MCP3208 = mcp3208.MCP3208(self._SPI, rb.CS_ADC)
 
-    if NeoPixel:
+    if neoPixel:
       # Initialize Neopixel (connector)
       if platform.languageID == platform.LNG_MICROPYTHON:
         from robotling_lib.platform.esp32.neopixel import NeoPixel
       elif platform.languageID == platform.LNG_CIRCUITPYTHON:
-        from robotling_lib.platform.m4ex.neopixel import NeoPixel
+        from robotling_lib.platform.circuitpython.neopixel import NeoPixel
       self._NPx = NeoPixel(rb.NEOPIX, 1)
       self._NPx0_RGB = bytearray([0]*3)
       self._NPx0_curr = array.array("i", [0,0,0])
       self._NPx0_step = array.array("i", [0,0,0])
       self.NeoPixelRGB = 0
-      print("[{0:>12}] {1:35}".format("Neopixel", "ready"))
+      s = "[{0:>12}] {1:35}".format("Neopixel", "ready")
+      print(ansi.GREEN +s +ansi.BLACK)
 
     # Initialize spin function-related variables
     self._spin_period_ms = 0
@@ -102,10 +115,16 @@ class RobotlingBase(object):
     gc.collect()
     return (gc.mem_alloc(), gc.mem_free())
 
+  @property
+  def ID(self):
+    return self._ID
+
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   def powerDown(self):
     """ Record run time
     """
+    if self.NeoPixelRGB:
+      self.NeoPixelRGB = 0
     self._run_duration_s = time.time() -self._start_s
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -117,9 +136,6 @@ class RobotlingBase(object):
       self._MCP3208.update()
     if self._NPx:
       self._pulseNeoPixel()
-    '''
-    gc.collect()
-    '''
 
   def updateEnd(self):
     """ To be called at the end of the update function
@@ -224,7 +240,7 @@ class RobotlingBase(object):
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @property
   def NeoPixelRGB(self):
-    return self._NPx_RGB
+    return self._NPx0_RGB
 
   @NeoPixelRGB.setter
   def NeoPixelRGB(self, value):

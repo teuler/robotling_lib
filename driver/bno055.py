@@ -41,15 +41,13 @@ except ImportError:
 from micropython import const
 import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
+if platform.languageID == platform.LNG_MICROPYTHON:
   import time
   from robotling_lib.platform.esp32.register.i2c_struct \
     import Struct, UnaryStruct
-elif (platform.ID == platform.ENV_CPY_SAM51 or
-      platform.ID == platform.ENV_CPY_NRF52):
-  import robotling_lib.platform.m4ex.time as time
-  from robotling_lib.platform.m4ex.circuitpython.register.i2c_struct \
+elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+  import robotling_lib.platform.circuitpython.time as time
+  from robotling_lib.platform.circuitpython.register.i2c_struct \
     import Struct, UnaryStruct
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)

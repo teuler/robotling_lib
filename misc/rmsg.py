@@ -5,6 +5,7 @@
 # The MIT License (MIT)
 # Copyright (c) 2020 Thomas Euler
 # 2020-01-05, v1
+# 2020-10-31, v1.2, use `languageID` instead of `ID`
 # ----------------------------------------------------------------------------
 try:
   ModuleNotFoundError
@@ -15,21 +16,20 @@ try:
   import array
   from micropython import const
   from robotling_lib.misc.helpers import timed_function
+  import robotling_lib.misc.ansi_color as ansi
   from robotling_lib.platform.platform import platform
-  if (platform.ID == platform.ENV_ESP32_UPY or
-      platform.ID == platform.ENV_ESP32_TINYPICO):
+  if platform.languageID == platform.LNG_MICROPYTHON:
     from machine import UART
-  elif (platform.ID == platform.ENV_CPY_SAM51 or
-        platform.ID == platform.ENV_CPY_NRF52):
+  elif platform.languageID == platform.LNG_CIRCUITPYTHON:
     from busio import UART
   else:
-    print("ERROR: No matching hardware libraries in `platform`.")
+    print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 except ModuleNotFoundError:
   # Standard Python imports
   const = lambda x : x
   import array
 
-__version__   = "0.1.0.0"
+__version__   = "0.1.1.0"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 TOK_REM     = 0
@@ -181,10 +181,10 @@ class RMsg(object):
     self._portType = PortType.NONE
     self.reset(clearBuf=True)
 
-  def reset(self, clearBuf=False):
+  def reset(self, token=TOK_NONE, clearBuf=False):
     """ Reset message content
     """
-    self._tok = TOK_NONE
+    self._tok = token
     self._nParams = 0
     self._sOut = ""
     self._sIn = ""
@@ -384,7 +384,7 @@ class RMsgUARTMPy(RMsg):
     self.any = self._any
     self._portType = PortType.UART_MPY
 
-  @property 
+  @property
   def isConnected(self):
      return self.self._uart is not None
 

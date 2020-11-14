@@ -34,8 +34,8 @@ import time
 from micropython import const
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.motors.servo_base import ServoBase
-
 import robotling_lib.misc.ansi_color as ansi
+
 from robotling_lib.platform.platform import platform
 if platform.languageID == platform.LNG_MICROPYTHON:
   from robotling_lib.platform.esp32.busio import UART

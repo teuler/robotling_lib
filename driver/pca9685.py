@@ -34,12 +34,11 @@ from robotling_lib.misc.helpers import timed_function
 from micropython import const
 
 from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
+if platform.languageID == platform.LNG_MICROPYTHON:
   from robotling_lib.platform.esp32.register import i2c_bit, i2c_bits
   from robotling_lib.platform.esp32.register.i2c_struct import UnaryStruct
   from robotling_lib.platform.esp32.register.i2c_struct_array import StructArray
-elif platform.ID == platform.ENV_CPY_SAM51:
+elif platform.languageID == platform.LNG_CIRCUITPYTHON:
   from robotling_lib.platform.m4ex.circuitpython.register import i2c_bit, i2c_bits
   from robotling_lib.platform.m4ex.circuitpython.i2c_struct import UnaryStruct
   from robotling_lib.platform.m4ex.circuitpython.i2c_struct_array import StructArray
