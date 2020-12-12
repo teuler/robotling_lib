@@ -1,13 +1,13 @@
 # ----------------------------------------------------------------------------
-# board_hexapod_0_32_huzzah32.py
+# board_hexapod_0_32_featherS2.py
 # Pins and devices on `hexapod' board, version 0.3.2 (1=client)
 #
 # The MIT License (MIT)
 # Copyright (c) 2020 Thomas Euler
-# 2020-08-01, v1
+# 2020-11-15, v1
 # ----------------------------------------------------------------------------
 from micropython import const
-import robotling_lib.platform.esp32.board_huzzah32 as board
+import board
 
 # pylint: disable=bad-whitespace
 # SPI -----------------
@@ -38,12 +38,12 @@ RX2        = board.D4
 DIO0       = board.A0
 DIO1       = board.A1
 DIO2       = board.D27
-DIO3       = board.D21
+DIO3       = board.D36 # D21
 NEOPIX     = board.D15
 
 # Other ---------------
 RED_LED    = board.LED
-YELLOW_LED = board.D21
+YELLOW_LED = board.D36 # D21
 ADC_BAT    = board.BAT
 # pylint: enable=bad-whitespace
 

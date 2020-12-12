@@ -18,8 +18,10 @@ import robotling_lib.robotling_board as rb
 from robotling_lib.platform.platform import platform
 if platform.languageID == platform.LNG_MICROPYTHON:
   import time
+  from robotling_lib.platform.esp32 import busio
 elif platform.languageID == platform.LNG_CIRCUITPYTHON:
   import robotling_lib.platform.circuitpython.time as time
+  from robotling_lib.platform.circuitpython import busio
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 

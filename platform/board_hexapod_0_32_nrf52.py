@@ -15,7 +15,7 @@ import board
 SCK        = board.SCK
 MOSI       = board.MOSI
 MISO       = board.MISO
-CS         = board.D33
+CS_ADC     = board.D33
 '''
 # I2C -----------------
 SCL        = board.SCL

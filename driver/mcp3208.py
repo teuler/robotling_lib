@@ -11,6 +11,7 @@
 import array
 from micropython import const
 from robotling_lib.misc.helpers import timed_function
+import robotling_lib.misc.ansi_color as ansi
 
 from robotling_lib.platform.platform import platform
 if platform.languageID == platform.LNG_MICROPYTHON:
@@ -18,7 +19,7 @@ if platform.languageID == platform.LNG_MICROPYTHON:
 elif platform.languageID == platform.LNG_CIRCUITPYTHON:
   import robotling_lib.platform.circuitpython.dio as dio
 else:
-  print("ERROR: No matching hardware libraries in `platform`.")
+  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
 __version__ = "0.1.2.0"
 CHIP_NAME   = "mcp3208"
@@ -41,8 +42,8 @@ class MCP3208(object):
     self._pinCS = dio.DigitalOut(pinCS, value=True)
     self._channelMask = 0x00
 
-    print("[{0:>12}] {1:35} ({2}): ok"
-          .format(CHIP_NAME, "8-channel A/D converter", __version__))
+    print(ansi.GREEN +"[{0:>12}] {1:35} ({2}): ok"
+          .format(CHIP_NAME, "8-channel A/D", __version__) +ansi.BLACK)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   #@timed_function
