@@ -16,9 +16,9 @@ For an overview of some of the supported hardware, see ["Sensoren etc."](https:/
 ├───platform               - Support for different platforms
 │   ├───esp32              - For ESP32 based modules, e.g. HUZZAH32, TinyPICO
 |   |   └───register       - Register classes (like in CircuitPython)        
-│   └───m4ex               - For Adafruit Feather M4 Express
-│       └───circuitpython     
-│           └───register
+│   └───circuitpython      - For Adafruit Feathers (e.g. M4 Express)
+│       ├───other     
+│       └───register
 ├───remote                 - MQTT telemetry, BLE support (ESP32 only) 
 └───sensors                - Sensor classes 
 ```
@@ -35,5 +35,4 @@ Device drivers (`driver`):
 - `mcp3208.py` - Class for 8-channel 12-bit SPI A/D converter MCP3208 driver
 - `pca9685.py` - Class for PCA9685 16-channel servo driver
 - `ssd1327.py` - Class for SSD1327 OLED monochrom display (I2C)
-
 
