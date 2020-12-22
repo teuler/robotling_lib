@@ -14,7 +14,7 @@ import board
 SCK        = board.SCK
 MOSI       = board.MOSI
 MISO       = board.MISO
-CS_ADC     = board.D33
+CS_ADC     = board.IO3
 
 # I2C -----------------
 SCL        = board.SCL
@@ -25,26 +25,31 @@ SDA        = board.SDA
 UART_CH    = const(1)
 TX         = board.TX
 RX         = board.RX
-D_CLI      = board.D32
+D_CLI      = board.IO38
 BAUD       = 115200
 
 # -> Tera EvoMini -----
 # UART 2
 UART2_CH   = const(2)
-TX2        = board.D14
-RX2        = board.D4
+TX2        = board.IO33
+RX2        = board.IO5
 
 # DIO -----------------
-DIO0       = board.A0
-DIO1       = board.A1
-DIO2       = board.D27
-DIO3       = board.D36 # D21
-NEOPIX     = board.D15
+DIO0       = board.IO17
+DIO1       = board.IO18
+DIO2       = board.IO7
+#DIO3      = board.IO6
+NEOPIX     = board.A10
 
-# Other ---------------
-RED_LED    = board.LED
-YELLOW_LED = board.D36 # D21
-ADC_BAT    = board.BAT
+# LEDs ----------------
+BLUE_LED   = board.IO13 # = board.LED
+YELLOW_LED = board.IO6
+DS_CLOCK   = board.APA102_SCK
+DS_DATA    = board.APA102_MOSI
+DS_POWER   = None
+
+# Power ---------------
+ADC_BAT    = None
+
 # pylint: enable=bad-whitespace
-
 # ----------------------------------------------------------------------------

@@ -8,11 +8,11 @@
 # Copyright (c) 2018-2020 Thomas Euler
 # 2018-09-26, v1
 # 2020-10-31, v1.1, generally CircuitPython
-# 2020-11-14, v1.2, `getColorFromWheel` added
 # ----------------------------------------------------------------------------
-from platform.circuitpython.other.neopixel import NeoPixel as NeoPixelBase
+from robotling_lib.platform.circuitpython.other.neopixel \
+  import NeoPixel as NeoPixelBase
 
-__version__ = "0.1.2.0"
+__version__ = "0.1.1.0"
 
 # ----------------------------------------------------------------------------
 class NeoPixel(NeoPixelBase):
@@ -30,18 +30,5 @@ class NeoPixel(NeoPixelBase):
     self.__setitem__(iNP, tuple(rgb))
     if show:
       self.show()
-
-  def getColorFromWheel(self, iWheel):
-    """ Get an RGB color from a wheel-like color representation
-    """
-    iWheel = iWheel % 255
-    if iWheel < 85:
-      return (255 -iWheel*3, 0, iWheel*3)
-    elif iWheel < 170:
-      iWheel -= 85
-      return (0, iWheel*3, 255 -iWheel*3)
-    else:
-      iWheel -= 170
-      return (iWheel*3, 255 -iWheel*3, 0)
 
 # ----------------------------------------------------------------------------

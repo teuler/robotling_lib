@@ -115,7 +115,7 @@ class DotStar:
     self.brightness = brightness
     self.auto_write = auto_write
 
-    t = "6x12 DotStar ({0})". format("software" if self._spi == None else "spi")
+    t = "{0}-pixel DotStar ({0})".format(n, "spi" if self._spi else "software")
     print(ansi.GREEN +"[{0:>12}] {1:35} ({2}): ok"
           .format(CHIP_NAME, t, __version__) +ansi.BLACK)
 

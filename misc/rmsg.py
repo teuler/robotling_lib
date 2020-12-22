@@ -143,7 +143,7 @@ TOK_MaxMsgLen_bytes    = const(154)
 TOK_MinMsgLen_bytes    = const(6)
 
 MSG_Client             = ">"
-MSG_Host               = "<"
+MSG_Server             = "<"
 MSG_EndChr             = ";"
 MSG_DataSepChr         = ","
 
@@ -172,13 +172,19 @@ class PortType():
 class RMsg(object):
   """A simple string-based interboard message format."""
 
-  def __init__(self):
+  def __init__(self, typeMsgOut=MSG_Client):
     """ Initialize message content
     """
     self._paramCh = bytearray(TOK_MaxParams)
     self._nData = bytearray(TOK_MaxData)
     self._poll = None
     self._portType = PortType.NONE
+    self._sLast = ""
+    if typeMsgOut in [MSG_Client, MSG_Server]:
+      self._typeMsgOut = typeMsgOut
+    else:
+      self._typeMsgOut = MSG_Client
+    self._typeMsgIn = MSG_Client if typeMsgOut == MSG_Server else MSG_Server
     self.reset(clearBuf=True)
 
   def reset(self, token=TOK_NONE, clearBuf=False):
@@ -204,6 +210,10 @@ class RMsg(object):
   @property
   def out_message_str(self):
     return self._sOut
+
+  @property
+  def last_message_str(self):
+    return self._sLast
 
   @token.setter
   def token(self, val):
@@ -238,7 +248,7 @@ class RMsg(object):
     self._data.append(array.array("i", data))
     self._nParams += 1
 
-  def to_string(self, isClient=True):
+  def to_string(self):
     """ Generate string from message content
     """
     self._errC = Err.Ok
@@ -249,7 +259,7 @@ class RMsg(object):
       self._errC = Err.TooManyParamsOrData
     else:
       # Put together the message content as a string ready to send
-      s0 = (MSG_Client if isClient else MSG_Host) +TOK_StrList[self._tok]
+      s0 = self._typeMsgOut +TOK_StrList[self._tok]
       if self._nParams > 0:
         s1 = " "
         for iP in range(self._nParams):
@@ -265,7 +275,7 @@ class RMsg(object):
     """ Parse string into message
     """
     self.reset()
-    if not (sMsg[0] in [MSG_Client, MSG_Host]  and sMsg[-1] == MSG_EndChr):
+    if not (sMsg[0] in [MSG_Client, MSG_Server] and sMsg[-1] == MSG_EndChr):
       self._errC = Err.CmdStrIncomplete
     else:
       # Get and identify token
@@ -307,7 +317,7 @@ class RMsg(object):
       return "n/a"
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  def send(self, tout_ms=100):
+  def send(self, tout_ms=50):
     """ Send message as string using the respective serial interface and
         returns the reply, if any, as a string. Accepts a timeout in [ms]
     """
@@ -316,18 +326,14 @@ class RMsg(object):
     if self._tok < 0 or self._tok > TOK_LastInd:
       self._errC = Err.CmdNotRecognized
     else:
-      self.to_string(self.isClient)
+      self.to_string()
       if len(self._sOut) > 0:
-        try:
-          self.write(self._sOut)
-          if tout_ms > 0:
-            if self._poll:
-              res = self._poll(tout_ms)
-            repl = self.readline()
-            self._sIn = repl.decode()
-        except:
-          # TODO: Catch different exceptions
-          self._errC = Err.Unknown
+        self.write(self._sOut)
+        if self._poll:
+          #res = self._poll(tout_ms)
+          self._poll(tout_ms)
+        if self.receive():
+          self._sIn = self._sLast
     return self._sIn
 
   def receive(self, tout_ms=50):
@@ -337,24 +343,24 @@ class RMsg(object):
     self._errC = Err.Ok
     if self.any() > 0:
       # Characters are waiting; add them to the buffer
-      self._sInBuf += self.read().decode()
+      self._sInBuf += self.readline().decode()
 
     if len(self._sInBuf) < TOK_MinMsgLen_bytes:
       # Too few characters for a complete message
       return False
 
     # May contain a complete message
-    tmp = self._sInBuf.split(MSG_Client)
-    n = len(tmp)
-    if n == 1:
+    tmp = self._sInBuf.split(self._typeMsgIn)
+    if len(tmp) == 1:
       # No start character ...
       return False
 
     if MSG_EndChr in tmp[1]:
       # Contains a complete message
-      msg = MSG_Client +tmp[1].split(MSG_EndChr)[0] +MSG_EndChr
+      msg = self._typeMsgIn +tmp[1].split(MSG_EndChr)[0] +MSG_EndChr
+      self._sLast = msg
       self._errC = self.from_string(msg)
-      self._sInBuf = MSG_Client +MSG_Client.join(tmp[2:])
+      self._sInBuf = self._typeMsgIn +self._typeMsgIn.join(tmp[2:])
       return self._errC == Err.Ok
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -366,10 +372,9 @@ class RMsgUARTMPy(RMsg):
   """A simple string-based interboard message format using a serial UART
      under MicroPython."""
 
-  def __init__(self, uart, isClient=True):
-    super().__init__()
+  def __init__(self, uart, typeMsgOut):
+    super().__init__(typeMsgOut)
     self._uart = uart
-    self.isClient = isClient
     try:
       import select
       self.pollObj = select.poll()
@@ -409,9 +414,8 @@ class RMsgBLEMPy(RMsg):
      peripheral protocol under MicroPython."""
 
   #def __init__(self, name="ble-uart", isClient=True):
-  def __init__(self, bsp, isClient=True):
-    super().__init__()
-    self.isClient = isClient
+  def __init__(self, bsp, typeMsgOut):
+    super().__init__(typeMsgOut)
     self._bsp = bsp
     self.write = self._bsp.write
     self.read = self._bsp.read
@@ -431,11 +435,10 @@ class RMsgCOM(RMsg):
   """A simple string-based interboard message format using a serial port
      under Windows/Linux."""
 
-  def __init__(self, com, baudrate, timeout=1.0, isClient=True):
-    super().__init__()
+  def __init__(self, com, baudrate, typeMsgOut, timeout=1.0):
+    super().__init__(typeMsgOut)
     self._com = com
     self._baudrate = baudrate
-    self.isClient = isClient
     try:
       import serial
       self.serClient = serial.Serial(com, baudrate, timeout=timeout)

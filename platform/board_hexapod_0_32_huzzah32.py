@@ -26,7 +26,7 @@ UART_CH    = const(1)
 TX         = board.TX
 RX         = board.RX
 D_CLI      = board.D32
-BAUD       = 115200
+BAUD       = 9600      # 115200
 
 # -> Tera EvoMini -----
 # UART 2

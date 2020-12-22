@@ -63,6 +63,11 @@ elif platform.ID == platform.ENV_CPY_NRF52:
   if BOARD_VER == 032:
     from robotling_lib.platform.board_hexapod_0_32_nrf52 import *
 
+elif platform.ID == platform.ENV_CPY_FEATHERS2:
+  # ESP32s2 board w/CircuitPython
+  if BOARD_VER == 032:
+    from robotling_lib.platform.board_hexapod_0_32_featherS2 import *
+
 else:
   # No fitting board found or wtong board version number
   assert False, "No fitting board found"
@@ -83,6 +88,10 @@ elif platform.ID == platform.ENV_CPY_NRF52:
   # 150K + 150K voltage divider on VBAT => compensation factor 2.0
   def battery_convert(v):
     return v *3.3/65536 *2
+
+else:
+  def battery_convert(v):
+    return 0
 
 # ----------------------------------------------------------------------------
 # Error codes

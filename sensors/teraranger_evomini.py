@@ -5,6 +5,7 @@
 # The MIT License (MIT)
 # Copyright (c) 2020 Thomas Euler
 # 2020-08-08, v1
+# 2020-12-20, v1.1, More robust managment of incoming data
 #
 # ----------------------------------------------------------------------------
 import array
@@ -28,7 +29,7 @@ elif platform.languageID == platform.LNG_CIRCUITPYTHON:
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
 
-__version__ = "0.1.0.0"
+__version__ = "0.1.1.0"
 CHIP_NAME   = "tera_evomini"
 CHAN_COUNT  = const(4)
 
@@ -40,9 +41,9 @@ TERA_DIST_INVALID   = const(0x0001)
 TERA_POLL_WAIT_MS   = const(10)
 
 # Internal constants and register values:
-_TERA_BAUD          = 115200
+_TERA_BAUD          = 115200 #115200
 _TERA_CMD_WAIT_MS   = const(10)
-_TERA_START_CHR     = const(0x54)
+_TERA_START_CHR     = b'T'
 _TERA_OUT_MODE_TEXT = bytearray([0x00, 0x11, 0x01, 0x45])
 _TERA_OUT_MODE_BIN  = bytearray([0x00, 0x11, 0x02, 0x4C])
 _TERA_PIX_MODE_1    = bytearray([0x00, 0x21, 0x01, 0xBC])
@@ -59,7 +60,7 @@ class TeraRangerEvoMini:
   def __init__(self, id, tx, rx, nPix=4, short=True):
     """ Requires pins and channel for unused UART
     """
-    self._uart = UART(id, baudrate=_TERA_BAUD, tx=tx, rx=rx)
+    self._uart = UART(id, tx=tx, rx=rx, baudrate=_TERA_BAUD)
     self._nPix = nPix
     self._short = short
 
@@ -75,6 +76,7 @@ class TeraRangerEvoMini:
     self._nBufExp = self._nPix*2 +2
     self._dist = array.array("i", [0]*self._nPix)
     self._inval = array.array("i", [0]*self._nPix)
+    self._sInBuf = b""
 
     # Set binary mode for results
     self._uart.write(_TERA_OUT_MODE_BIN)
@@ -109,33 +111,64 @@ class TeraRangerEvoMini:
     """ Update distance reading(s)
     """
     if self._uart is not None:
-      # UART seems to be ready ...
-      np = self._nPix
-      if self._poll is not None:
-        if len(self._poll.poll(TERA_POLL_WAIT_MS)) == 0:
-          return
-      elif self._uart.any() < self._nBufExp:
+      # Check if any new data arrived ...
+      if self._poll:
+        self._poll.poll(TERA_POLL_WAIT_MS)
+      if self._uart.any() == 0:
+        # No new data
         return
-      buf = self._uart.readline()
-      if buf and len(buf) == self._nBufExp and buf[0] == _TERA_START_CHR:
-        # Is valid buffer
-        if np == 4:
-          d = struct.unpack_from('>HHHH', buf[1:9])
-        elif np == 2:
-          d = struct.unpack_from('>HH', buf[1:5])
-        else:
-          d = struct.unpack_from('>H', buf[1:3])
-        if raw:
-          # Just copy new values to `dist`
-          self._dist = d
-        else:
-          # Check if values are valid and keep track of last valid reading
-          for iv,v in enumerate(d):
-            if v == TERA_DIST_INVALID:
-              self._inval[iv] += 1
-            else:
-              self._dist[iv] = v
-              self._inval[iv] = 0
+
+      # Data are waiting; add them to the buffer
+      nExp = self._nBufExp
+      sBuf = self._uart.readline()
+      if not sBuf:
+        # UART returns None?!
+        self.__logError("UART returns `None`")
+        return
+      self._sInBuf += bytearray(sBuf)
+
+      if len(self._sInBuf) < nExp:
+        # (Still) too few characters for a complete message
+        return
+
+      # Should contain a complete reading
+      tmp = self._sInBuf.split(_TERA_START_CHR)
+      nDt = len(tmp)
+      if nDt == 0:
+        self.__logError("Invalid data?")
+        return
+
+      if len(tmp[nDt -1]) < nExp -1:
+        # Incomplete dataset at the end; keep characters
+        self._sInBuf = _TERA_START_CHR +tmp[nDt -1]
+        iDt = nDt -2
+        if len(tmp[iDt]) < nExp -1:
+          self.__logError("Incomplete data?")
+          return
+      else:
+        # Ends with a complete dataset or is only one dataset
+        self._sInBuf = b""
+        iDt = nDt -1
+
+      # Decode reading
+      np = self._nPix
+      if np == 4:
+        d = struct.unpack_from('>HHHH', tmp[iDt][0:8]) #buf[1:9])
+      elif np == 2:
+        d = struct.unpack_from('>HH', tmp[iDt][0:4]) #buf[1:5])
+      else:
+        d = struct.unpack_from('>H',  tmp[iDt][0:2]) #buf[1:3])
+      if raw:
+        # Just copy new values to `dist`
+        self._dist = d
+      else:
+        # Check if values are valid and keep track of last valid reading
+        for iv,v in enumerate(d):
+          if v == TERA_DIST_INVALID:
+            self._inval[iv] += 1
+          else:
+            self._dist[iv] = v
+            self._inval[iv] = 0
 
   @property
   def distance(self):
@@ -144,5 +177,8 @@ class TeraRangerEvoMini:
   @property
   def invalids(self):
     return self._inval
+
+  def __logError(self, msg):
+    print(ansi.RED + "{0}|Error: {1}".format(CHIP_NAME, msg) +ansi.BLACK)
 
 # ----------------------------------------------------------------------------

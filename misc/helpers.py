@@ -14,7 +14,7 @@ if (platform.ID == platform.ENV_ESP32_UPY or
     platform.ID == platform.ENV_ESP32_TINYPICO):
   from time import ticks_us, ticks_diff
 else:
-  from robotling_lib.platform.m4ex.time import ticks_us, ticks_diff
+  from robotling_lib.platform.circuitpython.time import ticks_us, ticks_diff
 
 __version__ = "0.1.1.0"
 

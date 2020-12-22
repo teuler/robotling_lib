@@ -33,19 +33,21 @@ TX2        = board.D21
 RX2        = board.D22
 BAUD2      = 57600
 
-# Other ---------------
+# LEDs ----------------
+GREEN_LED  = board.D27
 DS_CLOCK   = board.DSCL
 DS_DATA    = board.DSDT
 DS_POWER   = board.DSPW
 
-GREEN_LED  = board.D27
+# Other ---------------
 SERVOS_OFF = board.D25
+SERVO_FRQ  = 50
 BUZZER     = board.D15
+
+# Power ---------------
 ADC_POT    = board.D32
 ADC_BAT    = board.D33
 KEYPAD_POW = board.D26
 
-SERVO_FRQ  = 50
 # pylint: enable=bad-whitespace
-
 # ----------------------------------------------------------------------------

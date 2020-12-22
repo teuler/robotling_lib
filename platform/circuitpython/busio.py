@@ -21,7 +21,7 @@ __version__ = "0.1.3.0"
 class SPIBus(object):
   """SPI bus access."""
 
-  def __init__(self, freq, sc, mo, mi):
+  def __init__(self, freq, sc, mo, mi=None, spidev=2):
     self._spi = SPI(sc, mo, mi)
     if not self._spi.try_lock():
       print("ERROR: busio.SPIBus: no lock for configure()")
@@ -39,6 +39,13 @@ class SPIBus(object):
     if self._spi.try_lock():
       try:
         self._spi.write_readinto(wbuf, rbuf)
+      finally:
+        self._spi.unlock()
+
+  def write(self, wbuf):
+    if self._spi.try_lock():
+      try:
+        self._spi.write(wbuf)
       finally:
         self._spi.unlock()
 
@@ -117,7 +124,7 @@ class UART(object):
     return self._uart.readline()
 
   def write(self, buf):
-    return self._uart.write(buf)
+    return self._uart.write(bytearray(buf))
 
   def any(self):
     return self._uart.in_waiting
