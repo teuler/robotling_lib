@@ -14,6 +14,7 @@ import robotling_lib.platform.esp32.board_tinypico as board
 SCK        = board.SCK
 MOSI       = board.MOSI
 MISO       = board.MISO
+CS_ADC     = board.D05
 
 # I2C -----------------
 SCL        = board.SCL

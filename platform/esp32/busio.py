@@ -46,23 +46,32 @@ class SPIBus(object):
 class I2CBus(object):
   """I2C bus access."""
 
-  def __init__(self, _freq, scl, sda, code=-1):
+  def __init__(self, **kwargs):
     self._i2cDevList = []
+    freq = 0
+    do_scan = False if not "scan" in kwargs else kwargs["scan"]
+    code = 0 if not "code" in kwargs else kwargs["code"]
+    freq = 400000 if not "freq" in kwargs else kwargs["freq"]
+    scl = kwargs["scl"]
+    sda = kwargs["sda"]
     if not code in [-1,0,1] or float(uname()[2][:4]) < 1.12:
       # Defaults to software implementation of I2C
-      self._i2c = I2C(scl=Pin(scl), sda=Pin(sda), freq=_freq)
+      self._i2c = I2C(scl=Pin(scl), sda=Pin(sda), freq=freq)
       self._isSoft = True
       codeStr = "Software"
     else:
       # User selected -1=software or 0,1=hardware implementation of I2C
-      self._i2c = I2C(code, scl=Pin(scl), sda=Pin(sda), freq=_freq)
+      self._i2c = I2C(code, scl=Pin(scl), sda=Pin(sda), freq=freq)
       self._isSoft = True if code == -1 else False
       codeStr = "Software" if self._isSoft else "Hardware #{0}".format(code)
-    print("{0} I2C bus frequency is {1} kHz".format(codeStr, _freq/1000))
-    print("Scanning I2C bus ...")
-    self._i2cDevList = self._i2c.scan()
-    print("... {0} device(s) found ({1})"
-          .format(len(self._i2cDevList), self._i2cDevList))
+
+    s = " frequency is {0} kHz".format(freq/1000) if freq > 0 else ""
+    print("{0} I2C bus {1}".format(codeStr, s))
+    if scan:
+      print("Scanning I2C bus ...")
+      self._i2cDevList = self._i2c.scan()
+      print("... {0} device(s) found ({1})"
+            .format(len(self._i2cDevList), self._i2cDevList))
 
   def deinit(self):
     self._i2c = None

@@ -53,26 +53,37 @@ class SPIBus(object):
 class I2CBus(object):
   """I2C bus access."""
 
-  def __init__(self, _freq, _scl, _sda, code=0):
+  def __init__(self, **kwargs):
     self._i2cDevList = []
+    freq = 0
+    do_scan = False if not "scan" in kwargs else kwargs["scan"]
+    code = 0 if not "code" in kwargs else kwargs["code"]
+    scl = kwargs["scl"]
+    sda = kwargs["sda"]
     if not code == 0:
       # Default to software implementation of I2C
       from bitbangio import I2C as softI2C
-      self._i2c = softI2C(scl=_scl, sda=_sda, frequency=_freq)
+      freq = 400000 if not "freq" in kwargs else kwargs["freq"]
+      self._i2c = softI2C(scl=scl, sda=sda, frequency=freq)
       codeStr = "Software"
     else:
       # Hardware implementation ...
-      self._i2c = I2C(scl=_scl, sda=_sda, frequency=_freq)
+      from busio import I2C as hardI2C
+      freq = 100000 if not "freq" in kwargs else kwargs["freq"]
+      self._i2c = hardI2C(scl=scl, sda=sda, frequency=freq)
       codeStr = "Hardware"
-    if not self._i2c.try_lock():
-      print("ERROR: busio.I2CBus: no lock for scan()")
-    else:
+    s = " frequency is {0} kHz".format(freq/1000) if freq > 0 else ""
+    print("{0} I2C bus{1}".format(codeStr, s))
+
+    if do_scan:
       try:
-        print("{0} I2C bus frequency is {1} kHz".format(codeStr, _freq/1000))
-        print("Scanning I2C bus ...")
-        self._i2cDevList = self._i2c.scan()
-        print("... {0} device(s) found ({1})"
-              .format(len(self._i2cDevList), self._i2cDevList))
+        if not self._i2c.try_lock():
+          print("ERROR: busio.I2CBus: no lock for scan()")
+        else:
+          print("Scanning I2C bus ...")
+          self._i2cDevList = self._i2c.scan()
+          print("... {0} device(s) found ({1})"
+                .format(len(self._i2cDevList), self._i2cDevList))
       finally:
         self._i2c.unlock()
 
@@ -100,6 +111,12 @@ class I2CBus(object):
     self._i2c.readfrom_into(addr, buf)
     bufi[in_start:in_end] = buf
 
+  def try_lock(self):
+    return self._i2c.try_lock()
+
+  def unlock(self):
+    self._i2c.unlock()
+
   def __enter__(self):
     while not self._i2c.try_lock():
       pass
@@ -111,7 +128,7 @@ class I2CBus(object):
 
 # ----------------------------------------------------------------------------
 class UART(object):
-  """UART."""
+  """UART"""
 
   def __init__(self, id=1, baudrate=9600, bits=8, parity=None, stop=1, tx=None,
                rx=None, rxbuf=64, timeout=0):

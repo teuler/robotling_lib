@@ -38,10 +38,10 @@ CHAN_COUNT  = const(4)
 TERA_DIST_NEG_INF   = const(0x0000)
 TERA_DIST_POS_INF   = const(0xFFFF)
 TERA_DIST_INVALID   = const(0x0001)
-TERA_POLL_WAIT_MS   = const(10)
+TERA_POLL_WAIT_MS   = const(5)
 
 # Internal constants and register values:
-_TERA_BAUD          = 115200 #115200
+_TERA_BAUD          = 115200
 _TERA_CMD_WAIT_MS   = const(10)
 _TERA_START_CHR     = b'T'
 _TERA_OUT_MODE_TEXT = bytearray([0x00, 0x11, 0x01, 0x45])
@@ -135,7 +135,7 @@ class TeraRangerEvoMini:
       tmp = self._sInBuf.split(_TERA_START_CHR)
       nDt = len(tmp)
       if nDt == 0:
-        self.__logError("Invalid data?")
+        #self.__logError("Invalid data?")
         return
 
       if len(tmp[nDt -1]) < nExp -1:
@@ -143,7 +143,7 @@ class TeraRangerEvoMini:
         self._sInBuf = _TERA_START_CHR +tmp[nDt -1]
         iDt = nDt -2
         if len(tmp[iDt]) < nExp -1:
-          self.__logError("Incomplete data?")
+          #self.__logError("Incomplete data?")
           return
       else:
         # Ends with a complete dataset or is only one dataset
@@ -171,7 +171,7 @@ class TeraRangerEvoMini:
             self._inval[iv] = 0
 
   @property
-  def distance(self):
+  def distances(self):
     return self._dist
 
   @property

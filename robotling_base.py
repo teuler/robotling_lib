@@ -90,6 +90,12 @@ class RobotlingBase(object):
     self._NPx = None
     self._DS = None
 
+    if MCP3208:
+      # Initialize analog sensor driver
+      import robotling_lib.driver.mcp3208 as mcp3208
+      self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.MOSI, rb.MISO, spidev=1)
+      self._MCP3208 = mcp3208.MCP3208(self._SPI, rb.CS_ADC)
+
     # RGB Pixel management
     if neoPixel:
       # Initialize Neopixel (connector)
@@ -118,12 +124,6 @@ class RobotlingBase(object):
       self._Pix_fact = 1.0
       self._Pix_pulse = False
       self.PixelRGB = 0
-
-    if MCP3208:
-      # Initialize analog sensor driver
-      import robotling_lib.driver.mcp3208 as mcp3208
-      self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.MOSI, rb.MISO)
-      self._MCP3208 = mcp3208.MCP3208(self._SPI, rb.CS_ADC)
 
     # Initialize spin function-related variables
     self._spin_period_ms = 0

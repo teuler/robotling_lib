@@ -197,10 +197,11 @@ class _ModeStruct(Struct):
 class BNO055Base(object):
   """Base class for the BNO055 9DOF IMU sensor."""
 
-  def __init__(self, i2c):
+  def __init__(self, i2c=None):
     """ Requires already initialized I2C bus instance.
     """
-    self.i2c_device = i2c
+    if i2c:
+      self.i2c_device = i2c
     self._isReady = False
     chip_id = self._read_register(_ID_REGISTER)
     if chip_id != _CHIP_ID:

@@ -27,6 +27,8 @@ I2C_FRQ    = const(400000)
 # CMPS12  (Compass)                           <= 400 KHz
 # LSM303  (Compass)                           100, 400 KHz
 # LSM9DS0 (Compass)                           100, 400 KHz
+# BNO055  (Compass)                           <= 400 KHz
+# SSD1327 (Display)                           up to 800 KHz?
 
 # ----------------------------------------------------------------------------
 # Robotling/Hexapod board connections/pins

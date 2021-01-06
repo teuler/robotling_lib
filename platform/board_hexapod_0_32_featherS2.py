@@ -42,7 +42,7 @@ DIO2       = board.IO7
 NEOPIX     = board.A10
 
 # LEDs ----------------
-BLUE_LED   = board.IO13 # = board.LED
+BLUE_LED   = board.LED
 YELLOW_LED = board.IO6
 DS_CLOCK   = board.APA102_SCK
 DS_DATA    = board.APA102_MOSI

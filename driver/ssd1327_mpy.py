@@ -36,7 +36,7 @@ from robotling_lib.platform.platform import platform
 if platform.languageID == platform.LNG_MICROPYTHON:
   from framebuf import FrameBuffer, GS4_HMSB
 else:
-  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
+  print(ansi.RED +"ERROR: This is a MicroPython-only library." +ansi.BLACK)
 
 __version__ = "0.1.0.0"
 CHIP_NAME   = "ssd1327"
@@ -46,7 +46,8 @@ _ADDR_SSD1327         = const(0x3C)
 
 # Commands
 SET_COL_ADDR          = const(0x15)
-SET_SCROLL_DEACTIVATE = const(0x2E)
+SET_SCROLL_DISABLE    = const(0x2E)
+SET_SCROLL_ENABLE     = const(0x2F)
 SET_ROW_ADDR          = const(0x75)
 SET_CONTRAST          = const(0x81)
 SET_SEG_REMAP         = const(0xA0)
@@ -75,6 +76,8 @@ REG_DATA              = const(0x40)
 
 # ----------------------------------------------------------------------------
 class SSD1327:
+  """SSD1327 driver (base class)"""
+
   def __init__(self, width, height, external_vcc):
     self._width = width
     self._height = height
@@ -209,17 +212,19 @@ class SSD1327:
 
 # ----------------------------------------------------------------------------
 class SSD1327_I2C(SSD1327):
+  """SSD1327 driver (I2C)"""
+
   def __init__(self, w, h, i2c, addr=_ADDR_SSD1327, ext_vcc=False):
     self.i2c_device = i2c
     self._i2c_addr = addr
     super().__init__(w, h, ext_vcc)
 
   def __write_cmd(self, cmd):
-    with self.i2c_device as ic2:
+    with self.i2c_device as i2c:
       i2c.writeto(self._i2c_addr, bytearray([REG_CMD, cmd]))
 
   def __write_data(self, buf):
-    with self.i2c_device as ic2:
+    with self.i2c_device as i2c:
       i2c.writeto(self._i2c_addr, buf)
 
   '''
