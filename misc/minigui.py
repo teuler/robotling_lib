@@ -56,11 +56,12 @@ class Widget(object):
 class WidgetBar(Widget):
   """Bar widget"""
 
-  def __init__(self, rect, minmax, unit="n/a"):
+  def __init__(self, rect, minmax, unit="n/a", label=""):
     # Initialize
     super().__init__(rect)
     self._min, self._max = minmax
     self._unit = unit
+    self._label = label
 
   def draw(self, val, alt_str=None, alt_val=None):
     global _display
@@ -72,15 +73,40 @@ class WidgetBar(Widget):
     x1 = x +2*dx //3
     y1 = y +1 +(dy-2 -dy1)
     self._elems.append(_display.rect(x1, y1, dx1, dy1, fill=2, outline=3))
+    s = alt_str if alt_str else "{0:.0f}{1}".format(val, self._unit)
     if self._firstDraw:
-      _display.rect(x, y, dx, dy, fill=1, outline=0)
+      _display.rect(x, y, dx-1, dy-1, fill=1, outline=0)
       _display.rect(x1, y+1, dx1, dy-2, outline=2)
-      self._unitStr = _display.text(self._unit, x+1, y+1 +dyf, 3, 1)
-      self._valStr = _display.text("-"*6, x+1, y+1, 3, 1)
+      #self._unitStr = _display.text(self._unit, x+3, y+1 +dyf, 3, 1)
+      self._valStr = _display.text("-"*6, x+3, y+1, 3, 1)
       self._firstDraw = False
     else:
-      self._valStr.text = alt_str if alt_str else str(val)
-      self._unitStr.text = str(alt_val) if alt_val else self._unit
+      self._valStr.text = s
+      #self._unitStr.text = str(alt_val) if alt_val else self._unit
+
+# ----------------------------------------------------------------------------
+class WidgetBattery(Widget):
+  """Battery widget"""
+
+  def __init__(self, rect, minmax, unit="n/a", label=""):
+    # Initialize
+    super().__init__(rect)
+    self._min, self._max = minmax
+    self._unit = unit
+    self._label = label
+
+  def draw(self, val, alt_str=None):
+    global _display
+    self.undraw()
+    x, y, dx, dy = self._rCanv
+    dx1 = max(int(min((val -self._min) /(self._max -self._min), 1) *(dx-2)), 1)
+    s = alt_str if alt_str else "{0:.1f}{1}".format(val, self._unit)
+    s = self._label +s
+    self._elems.append(_display.rect(x+1, y+1, dx1, dy-2, fill=2))
+    self._elems.append(_display.text(s, x+3, y+1, 3, 1, btransparent=True))
+    if self._firstDraw:
+      _display.rect(x, y, dx-1, dy-1, fill=1, outline=0)
+      self._firstDraw = False
 
 # ----------------------------------------------------------------------------
 class WidgetHeartbeat(Widget):

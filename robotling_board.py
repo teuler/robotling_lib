@@ -3,7 +3,7 @@
 # Global definitions for robotling board.
 #
 # The MIT License (MIT)
-# Copyright (c) 2018 Thomas Euler
+# Copyright (c) 2018-21 Thomas Euler
 # 2018-09-13, v1
 # 2018-12-22, v1.1 - pins for M4 feather express added
 # 2020-01-01, v1.2 - pins for hexapod robotling added
@@ -41,45 +41,30 @@ if platform.ID == platform.ENV_ESP32_UPY:
     from robotling_lib.platform.board_robotling_1_3_huzzah32 import *
   elif BOARD_VER == 200:
     from robotling_lib.platform.board_robotling_2_0_huzzah32 import *
-  elif BOARD_VER == 032:
-    from robotling_lib.platform.board_hexapod_0_32_huzzah32 import *
-
-  # The battery is connected to the pin via a voltage divider (1/2), and thus
-  # an effective voltage range of up to 7.8V (ATTN_11DB, 3.9V); the resolution
-  # is 12 bit (WITDH_12BIT, 4096):
-  # V = adc /4096 *2 *3.9 *0.901919 = 0.001717522
-  # (x2 because of voltage divider, x3.9 for selected range (ADC.ATTN_11DB)
-  #  and x0.901919 as measured correction factor)
-  BAT_N_PER_V   = 0.001717522
 
 elif platform.ID == platform.ENV_ESP32_TINYPICO:
   # TinyPICO ESP32 board w/MicroPython
-  from robotling_lib.platform.board_hexapod_0_31_tinypico import *
+  from robotling_lib.platform.board_hexapod_0_41_tinypico import *
 
 elif platform.ID == platform.ENV_CPY_SAM51:
   # SAM51 board w/CircuitPython
   from robotling_lib.platform.board_robotling_1_3_sam51 import *
 
-elif platform.ID == platform.ENV_CPY_NRF52:
-  # NRF52 board w/CircuitPython
-  if BOARD_VER == 032:
-    from robotling_lib.platform.board_hexapod_0_32_nrf52 import *
-
 elif platform.ID == platform.ENV_CPY_FEATHERS2:
   # ESP32s2 board w/CircuitPython
-  if BOARD_VER == 032:
-    from robotling_lib.platform.board_hexapod_0_32_featherS2 import *
+  if BOARD_VER == 042:
+    from robotling_lib.platform.board_hexapod_0_42_featherS2 import *
 
 else:
   # No fitting board found or wtong board version number
   assert False, "No fitting board found"
 
 # ----------------------------------------------------------------------------
-if platform.ID in [platform.ENV_ESP32_TINYPICO, platform.ENV_ESP32_UPY]:
+if platform.ID in [platform.ENV_ESP32_UPY, platform.ENV_ESP32_TINYPICO]:
   # The battery is connected to the pin via a voltage divider (1/2), and thus
   # an effective voltage range of up to 7.8V (ATTN_11DB, 3.9V); the resolution
-  # is 12 bit (WITDH_12BIT, 4096):
-  # V = adc /4096 *2 *3.9 *0.901919 = 0.001717522
+  # is 12 bit (WITDH_12BIT, 4096 -1):
+  # V = adc /(4096-1) *2 *3.9 *0.901919 = 0.001717522
   # (x2 because of voltage divider, x3.9 for selected range (ADC.ATTN_11DB)
   #  and x0.901919 as measured correction factor)
   def battery_convert(v):

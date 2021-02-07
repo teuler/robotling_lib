@@ -266,38 +266,51 @@ class SSD1327_I2C(object):
     """
     self._bmp[x, y] = min(col, _MAX_COLORS-1)
 
-  def circle(self, x, y, r, fill=None, outline=None, stroke=1):
+  def circle(self, x, y, r, fill=None, outline=None, stroke=1, index=None):
     """ Draw a circle
     """
     fl = self._pal[fill] if fill else None
     ol = self._pal[outline] if outline else None
     c = Circle(x, y, r, fill=fl, outline=ol, stroke=stroke)
-    self._group.append(c)
+    if index:
+      self._group.insert(index, c)
+    else:
+      self._group.append(c)
     return c
 
-  def rect(self, x, y, w, h, fill=None, outline=None, stroke=1):
+  def rect(self, x, y, w, h, fill=None, outline=None, stroke=1, index=None):
     """ Draw a rectangle
     """
     fl = self._pal[fill] if fill else None
     ol = self._pal[outline] if outline else None
     r = Rect(x, y, w, h, fill=fl, outline=ol, stroke=stroke)
-    self._group.append(r)
+    if index:
+      self._group.insert(index, r)
+      print(len(self._group), index)
+    else:
+      self._group.append(r)
     return r
 
-  def line(self, x0, y0, x1, y1, col):
+  def line(self, x0, y0, x1, y1, col, index=None):
     """ Draw a line
     """
     c = self._pal[min(col, _MAX_COLORS-1)]
     l = Line(x0, y0, x1, y1, c)
-    self._group.append(l)
+    if index:
+      self._group.insert(index, l)
+    else:
+      self._group.append(l)
     return l
 
-  def text(self, txt, x, y, tcol=None, bcol=None):
+  def text(self, txt, x, y, tcol=None, bcol=None, btransparent=False):
     """ Print text at pixel position `x,y`, demarking the top-left corner
         of the text field
     """
     tc = self._pal[self._tCol] if tcol is None else self._pal[tcol]
-    bc = self._pal[self._bCol] if bcol is None else self._pal[bcol]
+    if btransparent:
+      bc = None
+    else:
+      bc = self._pal[self._bCol] if bcol is None else self._pal[bcol]
     y1 = int(y +self._tdy //2)
     x1 = int(x)
     ta = Label(self._font, x=x1, y=y1, color=tc, background_color=bc, text=txt)

@@ -3,8 +3,10 @@
 # Pins and devices on `hexapod" board, version 0.3.1 (1=server)
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-21 Thomas Euler
 # 2020-08-01, v1
+# 2020-08-01, v1.1, Board revision (v0.3)
+# 2021-01-30, v1.1, Board revision (v0.4), w/ Stemma QT I2C port, fixes
 # ----------------------------------------------------------------------------
 from micropython import const
 import robotling_lib.platform.esp32.board_tinypico as board
@@ -17,31 +19,30 @@ MISO       = board.MISO
 CS_ADC     = board.D05
 
 # I2C -----------------
-SCL        = board.SCL
-SDA        = board.SDA
+SCL        = board.D25
+SDA        = board.D26
 
 # -> Client -----------
 # UART 1
 UART_CH    = const(1)
 TX         = board.D14
 RX         = board.D04
-BAUD       = 115200
+BAUD       = 115200 #230400
 
 # -> Maestro ----------
 # UART 2
 UART2_CH   = const(2)
 TX2        = board.D21
 RX2        = board.D22
-BAUD2      = 57600
+BAUD2      = 115200 #57600
 
 # LEDs ----------------
-GREEN_LED  = board.D27
+YELLOW_LED = board.D27
 DS_CLOCK   = board.DSCL
 DS_DATA    = board.DSDT
 DS_POWER   = board.DSPW
 
 # Other ---------------
-SERVOS_OFF = board.D25
 SERVO_FRQ  = 50
 BUZZER     = board.D15
 

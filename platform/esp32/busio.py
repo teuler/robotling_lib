@@ -67,7 +67,7 @@ class I2CBus(object):
 
     s = " frequency is {0} kHz".format(freq/1000) if freq > 0 else ""
     print("{0} I2C bus {1}".format(codeStr, s))
-    if scan:
+    if do_scan:
       print("Scanning I2C bus ...")
       self._i2cDevList = self._i2c.scan()
       print("... {0} device(s) found ({1})"

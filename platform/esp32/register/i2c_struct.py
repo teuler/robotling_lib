@@ -53,7 +53,7 @@ class Struct:
   def __get__(self, obj, objtype=None):
     b = bytearray(1 +struct.calcsize(self.format))
     b[0] = self.address
-    addr = obj._i2cAddr
+    addr = obj._i2c_addr
     obj.i2c_device.write_then_readinto(addr, b, b, out_end=1, in_start=1, stop_=False)
     return struct.unpack_from(self.format, memoryview(b)[1:])
 
@@ -61,7 +61,7 @@ class Struct:
     b = bytearray(1 +struct.calcsize(self.format))
     b[0] = self.address
     struct.pack_into(self.format, b, 1, *value)
-    obj.i2c_device.writeto(obj._i2cAddr, b)
+    obj.i2c_device.writeto(obj._i2c_addr, b)
 
 class UnaryStruct:
   """
@@ -78,7 +78,7 @@ class UnaryStruct:
   def __get__(self, obj, objtype=None):
     b = bytearray(1 +struct.calcsize(self.format))
     b[0] = self.address
-    addr = obj._i2cAddr
+    addr = obj._i2c_addr
     obj.i2c_device.write_then_readinto(addr, b, b, out_end=1, in_start=1, stop_=False)
     return struct.unpack_from(self.format, b, 1)[0]
 
@@ -86,7 +86,7 @@ class UnaryStruct:
     b = bytearray(1 +struct.calcsize(self.format))
     b[0] = self.address
     struct.pack_into(self.format, b, 1, value)
-    obj.i2c_device.writeto(obj._i2cAddr, b)
+    obj.i2c_device.writeto(obj._i2c_addr, b)
 
 '''
 class ROUnaryStruct(UnaryStruct):

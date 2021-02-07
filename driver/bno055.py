@@ -58,7 +58,7 @@ CHAN_COUNT  = const(1)
 
 # pylint: disable=bad-whitespace
 _CHIP_ID                = const(0xA0)
-_ADDRESS_BNO055         = const(0x28)
+ADDRESS_BNO055          = const(0x28)
 
 CONFIG_MODE             = const(0x00)
 ACCONLY_MODE            = const(0x01)
@@ -705,7 +705,7 @@ class BNO055(BNO055Base):
   radius_accelerometer = _ModeStruct(_RADIUS_ACCEL_REGISTER, "<h", CONFIG_MODE)
   radius_magnetometer = _ModeStruct(_RADIUS_MAGNET_REGISTER, "<h", CONFIG_MODE)
 
-  def __init__(self, i2c, address=_ADDRESS_BNO055):
+  def __init__(self, i2c, address=ADDRESS_BNO055):
     self._i2c_addr = address
     super().__init__(i2c)
 

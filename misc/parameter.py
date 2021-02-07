@@ -6,7 +6,7 @@
 # blending
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-21 Thomas Euler
 # 2020-05-18, First version
 #
 # ----------------------------------------------------------------------------
@@ -17,8 +17,7 @@ except NameError:
   ModuleNotFoundError = ImportError
 try:
   # Micropython imports
-  from ulab import compare
-  import ulab as np
+  from ulab import numpy as np
   MICROPYTHON = True
 except ModuleNotFoundError:
   # Standard Python imports
@@ -42,7 +41,6 @@ class Parameter(object):
         _val = np.array([val])
         self._min = np.array([_minmax[0]])
         self._max = np.array([_minmax[1]])
-
     else:
       if isinstance(val, list) or isinstance(val, np.ndarray):
         _val = np.array(val)
@@ -93,9 +91,9 @@ class Parameter(object):
       return
     if MICROPYTHON:
       try:
-        newVal = compare.clip(np.array(val), self._min, self._max)
+        newVal = np.clip(np.array(val), self._min, self._max)
       except ValueError:
-        newVal = compare.clip(np.array([val]), self._min, self._max)
+        newVal = np.clip(np.array([val]), self._min, self._max)
       if self._maxStep == 0:
         self._val = newVal
       else:
@@ -130,17 +128,13 @@ class Parameter(object):
 
   @property
   def y(self):
-    if self._dim < 2:
-      raise ValueError("Dimension out of range")
-    else:
-      return self._val[1]
+    assert self._dim >= 2, "Dimension out of range"
+    return self._val[1]
 
   @property
   def z(self):
-    if self._dim < 3:
-      raise ValueError("Dimension out of range")
-    else:
-      return self._val[2]
+    assert self._dim >= 3, "Dimension out of range"
+    return self._val[2]
 
   def __len__(self):
     return self._dim

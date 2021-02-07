@@ -3,7 +3,7 @@
 # Class to manage and control a number of servos
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-21 Thomas Euler
 # 2020-01-03, v1
 # 2020-08-02, v1.1 ulab
 # 2020-10-31, v1.2, use `languageID` instead of `ID`
@@ -17,7 +17,7 @@ if platform.languageID == platform.LNG_MICROPYTHON:
   import robotling_lib.platform.esp32.dio as dio
   from machine import Timer
   import time
-  import ulab as np
+  from ulab import numpy as np
   from micropython import alloc_emergency_exception_buf
   alloc_emergency_exception_buf(100)
 else:
@@ -56,8 +56,8 @@ class ServoManager(object):
     self._nToMove       = 0                               # # of servos to move
     self._dt_ms         = 0                               # Time period [ms]
     self._nSteps        = 0                               # # of steps to move
-    self._Timer         = Timer(0)
-    self._Timer.init(period=-1)
+    self._Timer         = Timer(1)
+    self._Timer.init(period=RATE_MS, mode=Timer.PERIODIC, callback=self._cb)
 
   def add_servo(self, i, servoObj, pos=0):
     """ Add at the entry `i` of the servo list the servo object, which has to
@@ -109,8 +109,6 @@ class ServoManager(object):
     """
     if self._isMoving:
       # Stop ongoing move
-      # ...
-      self._Timer.init(period=-1)
       self._isMoving = False
 
     # Prepare new move
@@ -165,7 +163,9 @@ class ServoManager(object):
         self._Servos[self._SIDList[iS]].write_us(p)
     else:
       # Setup timer to keep moving them in the requested time
+      '''
       self._Timer.init(mode=Timer.PERIODIC, period=RATE_MS, callback=self._cb)
+      '''
       self._isMoving = True
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

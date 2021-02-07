@@ -74,22 +74,23 @@ class MCP3208(object):
         `channelMask`. The data can then be accessed as an array via the
         property "data".
     """
-    cm = self._cmd
-    bf = self._buf
-    da = self._data
-    rg = range(CHAN_COUNT)
-    wr = self._spi.write_readinto
     mk = self._channelMask
-    try:
-      for i in rg:
-        if mk & (0x01 << i):
-          cm[0] = 0b11000000 +(i << 3)
-          self._pinCS.value = 0
-          wr(cm, bf)
-          self._pinCS.value = 1
-          da[i] = ((bf[0] & 1) << 11) | (bf[1] << 3) | (bf[2] >> 5) & 0x0FFF
-    except OSError as Err:
-      print("{0}: {1}".format(self.__class__.__name__, Err))
+    if mk > 0:
+      cm = self._cmd
+      bf = self._buf
+      da = self._data
+      rg = range(CHAN_COUNT)
+      wr = self._spi.write_readinto
+      try:
+        for i in rg:
+          if mk & (0x01 << i):
+            cm[0] = 0b11000000 +(i << 3)
+            self._pinCS.value = 0
+            wr(cm, bf)
+            self._pinCS.value = 1
+            da[i] = ((bf[0] & 1) << 11) | (bf[1] << 3) | (bf[2] >> 5) & 0x0FFF
+      except OSError as Err:
+        print("{0}: {1}".format(self.__class__.__name__, Err))
 
   @property
   def data(self):
