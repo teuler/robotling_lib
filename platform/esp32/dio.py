@@ -5,7 +5,7 @@
 # (for standard micropython, ESP32, as HUZZAH32 feather)
 #
 # The MIT License (MIT)
-# Copyright (c) 2018 Thomas Euler
+# Copyright (c) 2018-2021 Thomas Euler
 # 2018-11-25, v1.0
 # 2019-12-25, v1.1 Note that the ESP32 Microsoft port supports only one
 #                  frequency for all PWM objects.
@@ -18,6 +18,7 @@ from micropython import const
 from machine import Pin, PWM
 from esp32 import RMT
 
+# pylint: disable=bad-whitespace
 __version__     = "0.1.1.1"
 
 PULL_UP         = const(0)
@@ -27,6 +28,7 @@ RMT_MAX_CHAN    = const(7)
 RMT_CLOCK_DIV   = const(80)
 RMT_MAX_DUTY    = const(4000)
 RMT_DUTY_SCALER = const(40)
+# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class DigitalOut(object):

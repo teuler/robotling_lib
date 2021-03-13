@@ -3,7 +3,7 @@
 # Class for 8-channel 12-bit SPI A/D converter MCP3208 driver
 #
 # The MIT License (MIT)
-# Copyright (c) 2018 Thomas Euler
+# Copyright (c) 2018-2021 Thomas Euler
 # 2018-09-20, v1
 # 2018-11-25, v1.1, now uses dio_*.py to access machine
 # 2020-01-01, v1.2, micropython.native
@@ -13,18 +13,21 @@ from micropython import const
 from robotling_lib.misc.helpers import timed_function
 import robotling_lib.misc.ansi_color as ansi
 
-from robotling_lib.platform.platform import platform
-if platform.languageID == platform.LNG_MICROPYTHON:
+from robotling_lib.platform.platform import platform as pf
+if pf.languageID == pf.LNG_MICROPYTHON:
   import robotling_lib.platform.esp32.dio as dio
-elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+elif pf.languageID == pf.LNG_CIRCUITPYTHON:
   import robotling_lib.platform.circuitpython.dio as dio
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__ = "0.1.2.0"
-CHIP_NAME   = "mcp3208"
-CHAN_COUNT  = const(8)
-MAX_VALUE   = const(4096)
+# pylint: disable=bad-whitespace
+__version__     = "0.1.2.0"
+
+CHIP_NAME       = "mcp3208"
+CHAN_COUNT      = const(8)
+MAX_VALUE       = const(4095)
+# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class MCP3208(object):
@@ -35,10 +38,10 @@ class MCP3208(object):
         8 channel A/D converter IC (MCP3208). For performance reasons,
         not much validity checking is done.
     """
-    self._spi   = spi
-    self._cmd   = bytearray(b'\x00\x00\x00')
-    self._buf   = bytearray(3)
-    self._data  = array.array('i', [0]*CHAN_COUNT)
+    self._spi = spi
+    self._cmd = bytearray(b'\x00\x00\x00')
+    self._buf = bytearray(3)
+    self._data = array.array('i', [0]*CHAN_COUNT)
     self._pinCS = dio.DigitalOut(pinCS, value=True)
     self._channelMask = 0x00
 
@@ -48,7 +51,7 @@ class MCP3208(object):
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   #@timed_function
   def readADC(self, chan):
-    """ Returns error code and A/D value of channel `chan` as tuple
+    """ Returns A/D value of channel `chan` or `-1`, if an error occurs
     """
     cm = self._cmd
     bf = self._buf
@@ -101,6 +104,10 @@ class MCP3208(object):
   @property
   def channelCount(self):
     return CHAN_COUNT
+
+  @property
+  def maxValue(self):
+    return MAX_VALUE
 
   @property
   def channelMask(self):

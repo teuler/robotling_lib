@@ -13,9 +13,11 @@ import array
 from math import exp
 from robotling_lib.sensors.sensor_base import SensorBase
 
-__version__ = "0.1.1.0"
-CHIP_NAME_0 = "GP2Y0A41SK0F"  # 4 to 30 cm
-CHIP_NAME_1 = "GP2Y0AF15X"    # 1.5 to 15 cm
+# pylint: disable=bad-whitespace
+__version__    = "0.1.1.0"
+CHIP_NAME_0    = "GP2Y0A41SK0F"  # 4 to 30 cm
+CHIP_NAME_1    = "GP2Y0AF15X"    # 1.5 to 15 cm
+# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class SharpIRRangingSensor(SensorBase):
@@ -25,6 +27,7 @@ class SharpIRRangingSensor(SensorBase):
     super().__init__(driver, chan)
     self._type = "IR range"
     self._coef = array.array('f', [1,1,1,1])
+    self._maxV = driver.maxValue
 
   @property
   def range_raw(self):
@@ -38,7 +41,9 @@ class SharpIRRangingSensor(SensorBase):
     if self._autoUpdate:
       self._driver.update()
     cf = self._coef
-    x  = self._driver.data[self._chan]
+    mx = self._maxV
+    x = self._driver.data[self._chan]
+    x = x if mx == 4095 else (x/mx)*4095
     return cf[0]+ cf[1]*exp(-cf[2]*x)+cf[3]*exp(-cf[4]*x)
 
 # The following interface classes require an already initialised sensor driver
