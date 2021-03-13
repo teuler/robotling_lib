@@ -3,61 +3,73 @@
 # Class to manage and control a number of servos
 #
 # The MIT License (MIT)
-# Copyright (c) 2020-21 Thomas Euler
+# Copyright (c) 2020-2021 Thomas Euler
 # 2020-01-03, v1
 # 2020-08-02, v1.1 ulab
 # 2020-10-31, v1.2, use `languageID` instead of `ID`
+# 2021-02-14, v1.3, small improvements towards more performance
+# 2021-02-28, v1.4, compatibility w/ rp2
+#
+# Issues:
+# 2021-02-14, Does not work with MicroPython 1.14, because Timer and UART use
+#             seem to clash ...
 # ----------------------------------------------------------------------------
+import time
 import array
+import uasyncio
 from robotling_lib.misc.helpers import timed_function
 import robotling_lib.misc.ansi_color as ansi
 
-from robotling_lib.platform.platform import platform
-if platform.languageID == platform.LNG_MICROPYTHON:
-  import robotling_lib.platform.esp32.dio as dio
+from robotling_lib.platform.platform import platform as pf
+if pf.languageID == pf.LNG_MICROPYTHON:
   from machine import Timer
-  import time
-  from ulab import numpy as np
-  from micropython import alloc_emergency_exception_buf
-  alloc_emergency_exception_buf(100)
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__       = "0.1.2.0"
+# pylint: disable=bad-whitespace
+__version__       = "0.1.4.0"
 RATE_MS           = const(20)
+HARDWARE_TIMER    = const(0)
 _STEP_ARRAY_MAX   = const(500)
+# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class ServoManager(object):
   """Class to manage and control a number of servos"""
-
+  # pylint: disable=bad-whitespace
   TYPE_NONE       = const(0)
   TYPE_HORIZONTAL = const(1)
   TYPE_VERTICAL   = const(2)
   TYPE_SENSOR     = const(3)
+  # pylint: enable=bad-whitespace
 
   def __init__(self, n, max_steps=_STEP_ARRAY_MAX, verbose=False):
     """ Initialises the management structures
     """
-    self._isVerbose     = verbose
-    self._isMoving      = False
-    self._nChan         = max(1, n)
-    self._Servos        = [None]*n                        # Servo objects
-    self._servo_type    = np.array([0]*n, dtype=np.uint8) # Servo type
-    self._servo_number  = np.array([-1]*n, dtype=np.int8) # Servo number
-    self._servoPos      = np.array([0]*n)                 # Servo pos [us]
-    self._SIDList       = np.array([-1]*n, dtype=np.int8) # Servos to move next
-    self._targetPosList = np.array([0]*n)                 # Target pos [us]
-    self._currPosList   = np.array([-1]*n)                # Current pos [us]
-    self._stepSizeList  = np.array([0]*n)                 # .. step sizes [us]
-    self._stepLists     = []
-    for i in range(n):
-      self._stepLists.append(np.array([0]*max_steps))
-    self._nToMove       = 0                               # # of servos to move
-    self._dt_ms         = 0                               # Time period [ms]
-    self._nSteps        = 0                               # # of steps to move
-    self._Timer         = Timer(1)
+    self._isVerbose = verbose
+    self._nChan = max(1, n)
+    self._Servos = [None]*n                               # Servo objects
+    self._servo_type = bytearray([TYPE_NONE]*n)           # Servo type
+    self._servo_number = bytearray([255]*n)               # Servo number
+    self._servoPos = array.array("f", [0]*n)              # Servo pos [us]
+    self._SIDList = bytearray([255]*n)                    # Servos to move next
+    self._targetPosList = array.array("H", [0]*n)         # Target pos [us]
+    self._currPosList = array.array("f", [-1]*n)          # Current pos [us]
+    self._stepSizeList = array.array("f", [0]*n)          # .. step sizes [us]
+    self._max_steps = max_steps
+    self._stepLists = array.array("f", [0]*n*max_steps)
+    self._nToMove = 0                                     # # of servos to move
+    self._dt_ms = 0                                       # Time period [ms]
+    self._nSteps = 0                                      # # of steps to move
+    '''
+    self._Lock = uasyncio.Lock()
+    '''
+    self._isMoving = uasyncio.Event()
+    self._isFirstMove = True
+    self._Timer = Timer() if pf.ID == pf.ENV_MPY_RP2 else Timer(HARDWARE_TIMER)
+    '''
     self._Timer.init(period=RATE_MS, mode=Timer.PERIODIC, callback=self._cb)
+    '''
 
   def add_servo(self, i, servoObj, pos=0):
     """ Add at the entry `i` of the servo list the servo object, which has to
@@ -93,7 +105,8 @@ class ServoManager(object):
   def deinit(self):
     """ Clean up
     """
-    self._Timer.deinit()
+    if self._Timer:
+      self._Timer.deinit()
     self.turn_all_off(deinit=True)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -101,15 +114,15 @@ class ServoManager(object):
   def move_timed(self, servos, pos, dt_ms=0, lin_vel=True):
     self.move(servos, pos, dt_ms)
 
-  @micropython.native
+  #@micropython.native
   def move(self, servos, pos, dt_ms=0, lin_vel=True):
     """ Move the servos in the list to the positions given in `pos`.
         If `dt_ms` > 0, then it will be attempted that all servos reach the
         position at the same time (that is after `dt_ms` ms)
     """
-    if self._isMoving:
+    if self._isMoving.is_set():
       # Stop ongoing move
-      self._isMoving = False
+      self._isMoving.clear()
 
     # Prepare new move
     n = 0
@@ -119,22 +132,29 @@ class ServoManager(object):
       lin_vel = True
       print("WARNING: {0} is too many steps; going linear".format(int(nSteps)))
 
+    ser = self._Servos
+    sdl = self._SIDList
+    tpl = self._targetPosList
+    spo = self._servoPos
+    ssl = self._stepSizeList
+    cpl = self._currPosList
+    mxs = self._max_steps
     for iS, SID in enumerate(servos):
-      if not self._Servos[SID]:
+      if not ser[SID]:
         continue
-      self._SIDList[n] = SID
-      self._targetPosList[n] = self._Servos[SID].angle_in_us(pos[iS])
+      sdl[n] = SID
+      tpl[n] = ser[SID].angle_in_us(pos[iS])
       if nSteps > 0:
         # A time period is given, therefore calculate the step sizes for this
         # servo's move, with ...
-        p = self._servoPos[SID]
-        dp = self._targetPosList[n] -p
+        p = spo[SID]
+        dp = tpl[n] -p
         #print("dp=", dp)
         if lin_vel:
           # ... linear velocity
           s = int(dp /nSteps)
-          self._currPosList[n] = p +s
-          self._stepSizeList[n] = s
+          cpl[n] = p +s
+          ssl[n] = s
         else:
           # ... paraboloid trajectory
           p_n = nSteps -1
@@ -143,13 +163,13 @@ class ServoManager(object):
           p_func = [-(j +1 -p_n2)**2 +p_peak for j in range(int(nSteps))]
           p_scal = dp /sum(p_func)
           for iv in range(p_n -1):
-            self._stepLists[n][iv] = int(p_func[iv] *p_scal)
-          self._stepSizeList[n] = 0
+            self._stepLists[n*mxs +iv] = int(p_func[iv] *p_scal)
+          ssl[n] = 0
           #print(dp, nSteps, p_n, p_scal, sum(self._stepLists[iS]))
           #print(self._stepLists[iS])
       else:
         # Move directly, therefore update already the final position
-        self._servoPos[SID] = self._targetPosList[iS]
+        spo[SID] = tpl[iS]
       n += 1
     self._nToMove = n
     self._dt_ms = dt_ms
@@ -159,51 +179,53 @@ class ServoManager(object):
     if dt_ms == 0:
       # Just move them w/o considering timing
       for iS in range(n):
-        p = int(self._targetPosList[iS])
-        self._Servos[self._SIDList[iS]].write_us(p)
+        ser[sdl[iS]].write_us(tpl[iS])
     else:
       # Setup timer to keep moving them in the requested time
-      '''
-      self._Timer.init(mode=Timer.PERIODIC, period=RATE_MS, callback=self._cb)
-      '''
-      self._isMoving = True
+      if self._isFirstMove:
+        self._Timer.init(period=RATE_MS, mode=Timer.PERIODIC, callback=self._cb)
+        self._isFirstMove = False
+      self._isMoving.set()
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  #@timed_function
   def _cb(self, value):
-    if self._isMoving:
+    if self._isMoving.is_set():
       # Update every servo in the list
+      nSt = self._nSteps
+      sdl = self._SIDList
+      cpl = self._currPosList
+      ssl = self._stepSizeList
+      tpl = self._targetPosList
+      spo = self._servoPos
+      ser = self._Servos
+      mxs = self._max_steps
       for iS in range(self._nToMove):
-        SID = self._SIDList[iS]
-        if self._nSteps > 0:
-          # Move is ongoing, update servo position ...
-          p = int(self._currPosList[iS])
-          self._Servos[SID].write_us(p)
-          if self._stepSizeList[iS] == 0:
-            # Paraboloid trajectory
-            self._currPosList[iS] += self._stepLists[iS][self._nSteps]
-            #print("para", self._nSteps, p, self._stepLists[iS][self._nSteps])
+        if not spo[sdl[iS]] == tpl[iS]:
+          if nSt > 0:
+            # Move is ongoing, update servo position ...
+            ser[sdl[iS]].write_us(cpl[iS])
+            if ssl[iS] == 0:
+              # Paraboloid trajectory
+              cpl[iS] += self._stepLists[iS*mxs +nSt]
+            else:
+              # Linear trajectory
+              cpl[iS] += ssl[iS]
           else:
-            # Linear trajectory
-            self._currPosList[iS] += self._stepSizeList[iS]
-            #print("lin ", self._nSteps, p, self._stepSizeList[iS])
-        else:
-          # Move has ended, therefore set servo to the target position
-          tp = int(self._targetPosList[iS])
-          self._servoPos[SID] = tp
-          self._Servos[SID].write_us(tp)
-      if self._nSteps > 0:
-        self._nSteps -= 1
-        #print("curr", self._currPosList)
+            # Move has ended, therefore set servo to the target position
+            spo[sdl[iS]] = tpl[iS]
+            ser[sdl[iS]].write_us(spo[sdl[iS]])
+      if nSt > 0:
+        self._nSteps = nSt -1
       else:
         # Move is done
-        self._isMoving = False
-        #print("targ", self._targetPosList)
+        self._isMoving.clear()
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @property
   def is_moving(self):
     """ Returns True if a move is still ongoing
     """
-    return self._isMoving
+    return self._isMoving.is_set()
 
 # ----------------------------------------------------------------------------

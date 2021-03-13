@@ -37,7 +37,7 @@ class Parameter(object):
         _val = np.array(val)
         self._min = np.array(_minmax[0])
         self._max = np.array(_minmax[1])
-      except ValueError:
+      except TypeError:
         _val = np.array([val])
         self._min = np.array([_minmax[0]])
         self._max = np.array([_minmax[1]])

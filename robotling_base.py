@@ -168,7 +168,7 @@ class RobotlingBase(object):
       Pin(rb.DS_POWER, Pin.IN, Pin.PULL_HOLD)
     Pin(rb.DS_CLOCK, Pin.OUT if state else Pin.IN)
     Pin(rb.DS_DATA, Pin.OUT if state else Pin.IN)
-    time.sleep(.035)
+    time.sleep_ms(35)
     self._stateDS = state
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -3,7 +3,7 @@
 # Simplified servo interface class(es)
 #
 # The MIT License (MIT)
-# Copyright (c) 2018-2020 Thomas Euler
+# Copyright (c) 2018-2021 Thomas Euler
 # 2018-10-09, v1
 # 2018-11-25, v1.1, now uses dio_*.py to access machine
 # 2018-12-23, v1.2, added `verbose` to print timing information to help
@@ -12,21 +12,25 @@
 # 2018-12-23, v1.3, max duty cycle bug fixed.
 # 2020-01-01, v1.4, micropython.native
 # 2020-10-31, v1.5, use `languageID` instead of `ID`
+# 2021-02-28, v1.6, compatibility w/ rp2
 # ----------------------------------------------------------------------------
 import array
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.motors.servo_base import ServoBase
 import robotling_lib.misc.ansi_color as ansi
 
-from robotling_lib.platform.platform import platform
-if platform.languageID == platform.LNG_MICROPYTHON:
-  import robotling_lib.platform.esp32.dio as dio
-elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+from robotling_lib.platform.platform import platform as pf
+if pf.languageID == pf.LNG_MICROPYTHON:
+  if pf.ID == pf.ENV_MPY_RP2:
+    from robotling_lib.platform.rp2 import dio
+  else:
+    import robotling_lib.platform.esp32.dio as dio
+elif pf.languageID == pf.LNG_CIRCUITPYTHON:
   import robotling_lib.platform.circuitpython.dio as dio
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__      = "0.1.5.0"
+__version__      = "0.1.6.0"
 DEF_RANGE_DEG    = (0, 180)
 DEF_RANGE_US     = (600, 2400)
 
@@ -94,6 +98,6 @@ class Servo(ServoBase):
         d = (r[1] -t +r[0]) *dio.MAX_DUTY *f // 1000000
       self._pwm.duty = d
       if self._verbose:
-        print("angle={0}°, t_us={1}, duty={2}".format(self._angle, t_us, d))
+        print("angle={0}, t_us={1}, duty={2}".format(self._angle, t_us, d))
 
 # ----------------------------------------------------------------------------

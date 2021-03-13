@@ -6,6 +6,7 @@
 # Copyright (c) 2020 Thomas Euler
 # 2020-05-01, v1
 # 2020-10-31, v1.2, use `languageID` instead of `ID`
+# 2021-02-14, v1.3, small changes towards more performance
 #
 # The MIT License (MIT)
 # Copyright (c) 2016 Steven L. Jacobs (Maestro Python library)
@@ -42,7 +43,7 @@ if platform.languageID == platform.LNG_MICROPYTHON:
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__      = "0.1.1.0"
+__version__      = "0.1.3.0"
 CHIP_NAME        = "minMaestro18"
 CHAN_COUNT       = const(18)
 DEF_RANGE_DEG    = (0, 180)
@@ -107,6 +108,7 @@ class ServoChannel(ServoBase):
     self.set_acceleration(accel)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  @micropython.native
   def write_us(self, t_us, prepare_only=False):
     """ Move to a position given by the timing `t_us`; if `prepare_only` is
         True, the command for the move is stored and can be triggered using
@@ -121,12 +123,13 @@ class ServoChannel(ServoBase):
         d = int(t) *self._resolution
       else:
         d = int((r[1] -t +r[0]) *self._resolution)
-    self._cmd[4] = d & 0x7F
-    self._cmd[5] = (d >> 7) & 0x7F
+    cmd = self._cmd
+    cmd[4] = d & 0x7F
+    cmd[5] = (d >> 7) & 0x7F
     self._prepared = prepare_only
     self._mm18._nPrepared += 1 if prepare_only else 0
     if not prepare_only:
-      self._mm18._uart.write(self._cmd)
+      self._mm18._uart.write(cmd)
     if self._verbose:
       print("angle={0}°, t_us={1}, duty={2}".format(self._angle, t_us, d))
 
@@ -156,7 +159,7 @@ class ServoChannel(ServoBase):
     """
     self._mm18._uart.write(bytearray([_START, self._mm18._iDev, _GET_ERROR]))
     res = self._mm18._uart.read()
-    if len(res) == 2:
+    if res is not None and len(res) == 2:
       return res[0] +(res[1] << 8)
     else:
       return 0xFFFF
@@ -196,6 +199,7 @@ class MiniMaestro18:
   def __init__(self, _tx, _rx, ch=_UART_CH, baud=_BAUDRATE, dev=_ADDRESS):
     try:
       self._uart = UART(ch, baudrate=baud, tx=_tx, rx=_rx)
+      self._uart.init(bits=8, parity=None, stop=1)
       self._iDev = dev
       self.channels = ServoChannels(self)
       self.reset()

@@ -3,30 +3,34 @@
 # Class that determines board and MicroPython distribution
 #
 # The MIT License (MIT)
-# Copyright (c) 2018 Thomas Euler
+# Copyright (c) 2018-2021 Thomas Euler
 # 2018-09-21, v1
 # 2018-09-21, v1.1, language ID added
 # 2020-12-12, v1.2, FeatherS2 added
+# 2021-02-28, v1.3, rp2 (Raspberry Pi Pico) added
 # ----------------------------------------------------------------------------
 from os import uname
 from micropython import const
 
-__version__ = "0.1.2.0"
+__version__ = "0.1.3.0"
 
 # ----------------------------------------------------------------------------
 class Platform(object):
   """Board type and MicroPython distribution."""
 
+  # pylint: disable=bad-whitespace
   ENV_UNKNOWN           = const(0)
   ENV_ESP32_UPY         = const(1)
   ENV_ESP32_TINYPICO    = const(2)
   ENV_CPY_FEATHERS2     = const(3)
   ENV_CPY_SAM51         = const(4)
   ENV_CPY_NRF52         = const(5)
+  ENV_MPY_RP2           = const(6)
 
   LNG_UNKNOWN           = const(0)
   LNG_MICROPYTHON       = const(1)
   LNG_CIRCUITPYTHON     = const(2)
+  # pylint: enable=bad-whitespace
 
   def __init__(self):
     # Determine distribution, board type and GUID
@@ -44,8 +48,10 @@ class Platform(object):
       self._envID = ENV_CPY_NRF52
     if self.sysInfo[0] == "esp32s2":
       self._envID = ENV_CPY_FEATHERS2
+    if self.sysInfo[0] == "rp2":
+      self._envID = ENV_MPY_RP2
 
-    if self._envID in [ENV_ESP32_UPY, ENV_ESP32_TINYPICO]:
+    if self._envID in [ENV_ESP32_UPY, ENV_ESP32_TINYPICO, ENV_MPY_RP2]:
       self._lngID = LNG_MICROPYTHON
     elif self._envID in [ENV_CPY_SAM51, ENV_CPY_NRF52, ENV_CPY_FEATHERS2]:
       self._lngID = LNG_CIRCUITPYTHON
@@ -73,7 +79,7 @@ class Platform(object):
 
   @property
   def language(self):
-    return ["MicroPython", "CircuitPython", "n/a"][self._lngID]
+    return ["n/a", "MicroPython", "CircuitPython"][self._lngID]
 
   @property
   def languageID(self):
