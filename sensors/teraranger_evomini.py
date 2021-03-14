@@ -6,7 +6,7 @@
 # Copyright (c) 2020 Thomas Euler
 # 2020-08-08, v1
 # 2020-12-20, v1.1, More robust managment of incoming data
-#
+# 2021-03-14, v1.2, compatibility w/ rp2
 # ----------------------------------------------------------------------------
 import array
 from micropython import const
@@ -18,20 +18,26 @@ try:
 except ImportError:
   import ustruct as struct
 
-from robotling_lib.platform.platform import platform
-if platform.languageID == platform.LNG_MICROPYTHON:
-  from robotling_lib.platform.esp32.busio import UART
+from robotling_lib.platform.platform import platform as pf
+if pf.languageID == pf.LNG_MICROPYTHON:
+  if pf.ID == pf.ENV_MPY_RP2:
+    from machine import UART
+  else:
+    from robotling_lib.platform.esp32.busio import UART
   from time import sleep_ms
   import select
-elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+elif pf.languageID == pf.LNG_CIRCUITPYTHON:
   from robotling_lib.platform.circuitpython.busio import UART
   from robotling_lib.platform.circuitpython.time import sleep_ms
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
 
-__version__ = "0.1.1.0"
+# pylint: disable=bad-whitespace
+__version__ = "0.1.2.0"
+
 CHIP_NAME   = "tera_evomini"
 CHAN_COUNT  = const(4)
+# pylint: enavble=bad-whitespace
 
 # pylint: disable=bad-whitespace
 # User facing constants/module globals.
@@ -91,7 +97,7 @@ class TeraRangerEvoMini:
 
     # Prepare polling construct, if available
     self._poll = None
-    if platform.ID == platform.ENV_ESP32_UPY:
+    if pf.ID in [pf.ENV_ESP32_UPY, pf.ENV_MPY_RP2]:
       self._poll = select.poll()
       self._poll.register(self._uart, select.POLLIN)
 
@@ -120,13 +126,18 @@ class TeraRangerEvoMini:
 
       # Data are waiting; add them to the buffer
       nExp = self._nBufExp
+      sBuf = bytes()
+      '''
       sBuf = self._uart.readline()
       if not sBuf:
         # UART returns None?!
         self.__logError("UART returns `None`")
         return
-      self._sInBuf += bytearray(sBuf)
+      '''
+      while self._uart.any() > 0:
+        sBuf += self._uart.read(1)
 
+      self._sInBuf += bytearray(sBuf)
       if len(self._sInBuf) < nExp:
         # (Still) too few characters for a complete message
         return
@@ -135,7 +146,7 @@ class TeraRangerEvoMini:
       tmp = self._sInBuf.split(_TERA_START_CHR)
       nDt = len(tmp)
       if nDt == 0:
-        #self.__logError("Invalid data?")
+        self.__logError("Invalid data?")
         return
 
       if len(tmp[nDt -1]) < nExp -1:
@@ -143,11 +154,11 @@ class TeraRangerEvoMini:
         self._sInBuf = _TERA_START_CHR +tmp[nDt -1]
         iDt = nDt -2
         if len(tmp[iDt]) < nExp -1:
-          #self.__logError("Incomplete data?")
+          self.__logError("Incomplete data?")
           return
       else:
         # Ends with a complete dataset or is only one dataset
-        self._sInBuf = b""
+        self._sInBuf = bytes()
         iDt = nDt -1
 
       # Decode reading

@@ -7,7 +7,6 @@
 # 2018-09-23, v1
 # 2019-08-03, new type of Sharp sensor added (GP2Y0AF15X, 1.5-15 cm)
 # 2019-12-21, native code generation added (requires MicroPython >=1.12)
-#
 # ----------------------------------------------------------------------------
 import array
 from math import exp
