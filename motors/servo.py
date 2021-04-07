@@ -50,7 +50,8 @@ class Servo(ServoBase):
     super().__init__(freq, us_range, ang_range, verbose)
     self._pwm      = dio.PWMOut(pin, freq=freq, duty=0)
     self._max_duty = self._pwm.max_duty
-    print("Servo at pin {0} ({1} Hz) ready.".format(pin, freq))
+    if verbose:
+      print("Servo at pin {0} ({1} Hz) ready.".format(pin, freq))
 
   @property
   def angle(self):

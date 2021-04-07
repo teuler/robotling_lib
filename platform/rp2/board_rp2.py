@@ -14,6 +14,7 @@ __version__ = "0.1.0.0"
 # Adafruit Huzzah32
 # (USB connector down, from the top)
 #
+# pylint: disable=bad-whitespace
 # Left column:
 D0   = const(0)   #  1, I2C0_SDA, SPI0_RX,  UART0_TX
 D1   = const(1)   #  2, I2C0_SCL, SPI0_CSn, UART0_RX
@@ -56,6 +57,7 @@ D16  = const(21)  # 21, SPI0_RX,  I2C0_SDA, UART0_TX
 LED  = const(25)  # green onboard LED
 VBUS = const(24)  # VBUS sense, high=USB power connected
 BAT  = const(29)  # ADC3 measuring VSYS/3
+# pylint: enable=bad-whitespace
 
 # Special functions
 def voltage_V():

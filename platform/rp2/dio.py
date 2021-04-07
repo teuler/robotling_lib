@@ -12,11 +12,13 @@ import time
 from micropython import const
 from machine import Pin, PWM
 
+# pylint: disable=bad-whitespace
 __version__     = "0.1.0.0"
 
 PULL_UP         = const(0)
 PULL_DOWN       = const(1)
 MAX_DUTY        = const(65536)
+# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class DigitalOut(object):
