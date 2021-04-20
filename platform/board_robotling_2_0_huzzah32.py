@@ -40,6 +40,7 @@ DIO3       = board.D32
 ENAB_5V    = board.D16
 RED_LED    = board.LED
 ADC_BAT    = board.BAT
+DS_CLOCK   = None
 
 # Note 1: The ESP32 MicroPython port currently supports only one frequency
 # for all PWM objects. Servos usually expect 50 Hz, but to run the DC motors
