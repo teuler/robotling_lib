@@ -21,10 +21,12 @@ from robotling_lib.platform.platform import platform
 if platform.languageID == platform.LNG_MICROPYTHON:
   import time
   from robotling_lib.platform.esp32 import busio
+  import robotling_lib.platform.esp32.dio as dio
   from machine import Pin
 elif platform.languageID == platform.LNG_CIRCUITPYTHON:
   import robotling_lib.platform.circuitpython.time as time
   from robotling_lib.platform.circuitpython import busio
+  import robotling_lib.platform.circuitpython.dio as dio
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
@@ -87,8 +89,13 @@ class RobotlingBase(object):
     self._Tele = None
     self._MCP3208 = None
     self._Pix_enablePulse = False
+    self.onboardLED = None
     self._NPx = None
     self._DS = None
+
+    # Initialize on-board (feather) hardware
+    if rb.RED_LED:
+      self.onboardLED = dio.DigitalOut(rb.RED_LED, value=False)
 
     if MCP3208:
       # Initialize analog sensor driver
@@ -262,9 +269,9 @@ class RobotlingBase(object):
           sta_if.active(True)
           sta_if.connect(my_ssid, my_wp2_pwd)
           while not sta_if.isconnected():
-            self.greenLED.on()
+            self.onboardLED.on()
             time.sleep(0.05)
-            self.greenLED.off()
+            self.onboardLED.off()
             time.sleep(0.05)
           print("[{0:>12}] {1}".format("network", sta_if.ifconfig()))
 
