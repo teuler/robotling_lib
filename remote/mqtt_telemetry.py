@@ -3,7 +3,7 @@
 # Telemetry via the MQTT protocol (test).
 #
 # The MIT License (MIT)
-# Copyright (c) 2018-19 Thomas Euler
+# Copyright (c) 2018-21 Thomas Euler
 # 2018-11-11, v1
 # 2019-07-25, Added `connect` as method;
 #             switched from `umqtt.simple` to `umqtt.robust` because it
@@ -12,15 +12,20 @@
 # 2019-09-01, Optionally encrypt messages, defined by `my_mqtt_encrypt_key`
 #             and `my_mqtt_encrypt_CBC` in `NETWORK.py`. Also. SSL
 #             connections to the broker are possible
+# 2021-04-23, Does not require anly longer that `umqtt` is included in the
+#             firmware
 #
 # ----------------------------------------------------------------------------
 import network
 import ujson
 import errno
-from umqtt.robust import MQTTClient
+try:
+  from umqtt.robust import MQTTClient
+except ImportError:
+  from robotling_lib.remote.robust import MQTTClient
 from robotling_lib.misc.helpers import timed_function
 
-__version__ = "0.1.2.0"
+__version__ = "0.1.3.0"
 
 # ----------------------------------------------------------------------------
 class Telemetry():

@@ -36,6 +36,10 @@ __version__      = "0.1.2.0"
 class RobotlingBase(object):
   """Robotling base class.
 
+  Objects:
+  -------
+  - onboardLED     : on(), off()
+
   Methods:
   -------
   - connectToWLAN():
@@ -93,10 +97,6 @@ class RobotlingBase(object):
     self._NPx = None
     self._DS = None
 
-    # Initialize on-board (feather) hardware
-    if rb.RED_LED:
-      self.onboardLED = dio.DigitalOut(rb.RED_LED, value=False)
-
     if MCP3208:
       # Initialize analog sensor driver
       import robotling_lib.driver.mcp3208 as mcp3208
@@ -131,6 +131,11 @@ class RobotlingBase(object):
       self._Pix_fact = 1.0
       self._Pix_pulse = False
       self.PixelRGB = 0
+
+    # Initialize on-board (feather) hardware
+    if rb.RED_LED:
+      self.onboardLED = dio.DigitalOut(rb.RED_LED)
+      print("redLED")
 
     # Initialize spin function-related variables
     self._spin_period_ms = 0
