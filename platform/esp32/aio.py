@@ -23,11 +23,8 @@ WIDTH_9BIT      = const(0)
 WIDTH_10BIT     = const(1)
 WIDTH_11BIT     = const(2)
 WIDTH_12BIT     = const(3)
+WIDTH_13BIT     = const(4)
 # pylint: enabled=bad-whitespace
-
-ATTN  = bytearray([ADC.ATTN_0DB, ADC.ATTN_2_5DB, ADC.ATTN_6DB, ADC.ATTN_11DB])
-WIDTH = bytearray([ADC.WIDTH_9BIT, ADC.WIDTH_10BIT, ADC.WIDTH_11BIT,
-                   ADC.WIDTH_12BIT])
 
 # ----------------------------------------------------------------------------
 class AnalogIn(object):
@@ -35,9 +32,9 @@ class AnalogIn(object):
 
   def __init__(self, pin, attn=ATTN_11DB, width=WIDTH_12BIT):
     self._pin = ADC(Pin(pin))
-    self._pin.atten(ATTN[attn])
-    self._pin.width(WIDTH[width])
-    self._max_adc = 2**(9 +WIDTH[width]) -1
+    self._pin.atten(attn)
+    self._pin.width(width)
+    self._max_adc = 2**(9 +width) -1
 
   def deinit(self):
     self._pin = None

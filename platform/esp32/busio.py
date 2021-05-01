@@ -12,7 +12,7 @@
 # 2020-10-09, v1.3 - `I2CBus` use with `with`-statement
 # ----------------------------------------------------------------------------
 from os import uname
-from machine import SPI, Pin, I2C
+from machine import SPI, Pin, I2C, SoftSPI
 from micropython import const
 from machine import UART
 
@@ -22,12 +22,17 @@ __version__ = "0.1.2.0"
 class SPIBus(object):
   """SPI bus access."""
 
-  def __init__(self, freq, sc, mo, mi=None, spidev=2):
-    self._spi = SPI(spidev)
-    if mi == None:
-      self._spi.init(baudrate=freq, sck=Pin(sc), mosi=Pin(mo))
+  def __init__(self, freq, sck, sdo, sdi=None, spidev=None):
+    _mi = Pin(sdi) if sdi else None
+    _mo = Pin(sdo)
+    _sc = Pin(sck)
+    if spidev:
+      self._spi = SPI(spidev)
+      self._spi.init(baudrate=freq, sck=_sc, mosi=_mo, miso=_mi)
+    elif spidev < 0:
+      self._spi = SoftSPI(sck=_sc, mosi=_mo, miso=_mi)
     else:
-      self._spi.init(baudrate=freq, sck=Pin(sc), mosi=Pin(mo), miso=Pin(mi))
+      self._spi = SPI(baudrate=freq, sck=_sc, mosi=_mo, miso=_mi)
 
   def deinit(self):
     self._spi.deinit()

@@ -48,6 +48,8 @@ class DRV8835(object):
       self.pinB_EN = dio.PWMOut(pinB_EN, freq=freq, channel=rb.MOTOR_B_CH)
       self.pinB_PH = dio.DigitalOut(pinB_PHASE)
       self._mode = MODE_PH_EN
+      self.pinA_EN.duty_percent = 0
+      self.pinB_EN.duty_percent = 0
 
     elif mode == MODE_IN_IN:
       print("IN/IN mode not implemented.")

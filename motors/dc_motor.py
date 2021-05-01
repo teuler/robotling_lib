@@ -6,7 +6,7 @@
 # Copyright (c) 2018 Thomas Euler
 # 2018-09-23, v1
 # ----------------------------------------------------------------------------
-__version__ = "0.1.0.0"
+__version__ = "0.1.1.0"
 
 # ----------------------------------------------------------------------------
 class DCMotor(object):
@@ -17,9 +17,9 @@ class DCMotor(object):
         channel assigned to this motor instance
     """
     self._driver = driver
-    self._chan   = min(max(chan, 0), driver.channelCount-1)
-    self._spArr  = [None]*driver.channelCount
-    self._speed  = 0
+    self._chan = min(max(chan, 0), driver.channelCount-1)
+    self._spArr = [None]*driver.channelCount
+    self.speed = 0
     print("DC motor {0} is ready.".format(["A", "B", "C", "D"][self._chan]))
 
   @property

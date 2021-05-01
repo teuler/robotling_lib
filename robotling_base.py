@@ -17,13 +17,13 @@ import robotling_lib.misc.ansi_color as ansi
 import robotling_lib.robotling_board as rb
 from robotling_lib.misc.color_wheel import getColorFromWheel
 
-from robotling_lib.platform.platform import platform
-if platform.languageID == platform.LNG_MICROPYTHON:
+from robotling_lib.platform.platform import platform as pf
+if pf.languageID == pf.LNG_MICROPYTHON:
   import time
   from robotling_lib.platform.esp32 import busio
   import robotling_lib.platform.esp32.dio as dio
   from machine import Pin
-elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+elif pf.languageID == pf.LNG_CIRCUITPYTHON:
   import robotling_lib.platform.circuitpython.time as time
   from robotling_lib.platform.circuitpython import busio
   import robotling_lib.platform.circuitpython.dio as dio
@@ -89,7 +89,7 @@ class RobotlingBase(object):
     self._start_s = time.time()
 
     # Initialize some variables
-    self._ID = platform.GUID
+    self._ID = pf.GUID
     self._Tele = None
     self._MCP3208 = None
     self._Pix_enablePulse = False
@@ -99,16 +99,17 @@ class RobotlingBase(object):
 
     if MCP3208:
       # Initialize analog sensor driver
-      import robotling_lib.driver.mcp3208 as mcp3208
-      self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.MOSI, rb.MISO, spidev=1)
+      from robotling_lib.driver import mcp3208
+      dev = None if pf.ID == pf.ENV_ESP32_S2 else 1
+      self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.SDI, rb.SDO, spidev=dev)
       self._MCP3208 = mcp3208.MCP3208(self._SPI, rb.CS_ADC)
 
     # RGB Pixel management
     if neoPixel:
       # Initialize Neopixel (connector)
-      if platform.languageID == platform.LNG_MICROPYTHON:
+      if pf.languageID == pf.LNG_MICROPYTHON:
         from robotling_lib.platform.esp32.neopixel import NeoPixel
-      elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+      elif pf.languageID == pf.LNG_CIRCUITPYTHON:
         from robotling_lib.platform.circuitpython.neopixel import NeoPixel
       self._NPx = NeoPixel(rb.NEOPIX, 1)
       self._NPx.set((0,0,0), 0, True)
@@ -135,7 +136,6 @@ class RobotlingBase(object):
     # Initialize on-board (feather) hardware
     if rb.RED_LED:
       self.onboardLED = dio.DigitalOut(rb.RED_LED)
-      print("redLED")
 
     # Initialize spin function-related variables
     self._spin_period_ms = 0
@@ -264,7 +264,7 @@ class RobotlingBase(object):
   def connectToWLAN(self):
     """ Connect to WLAN if not already connected
     """
-    if platform.ID in [platform.ENV_ESP32_UPY, platform.ENV_ESP32_TINYPICO]:
+    if pf.ID in [pf.ENV_ESP32_UPY, pf.ENV_ESP32_TINYPICO, pf.ENV_ESP32_S2]:
       import network
       from NETWORK import my_ssid, my_wp2_pwd
       if not network.WLAN(network.STA_IF).isconnected():
@@ -284,14 +284,24 @@ class RobotlingBase(object):
   def printReport(self):
     """ Prints a report on memory usage and performance
     """
-    used, free = self.memory
-    total = free +used
-    print("Memory     : {0:.0f}% of {1:.0f}kB heap RAM used."
-          .format(used/total*100, total/1024))
+    self.printMemory(report=True)
     avg_ms = self._spinTracker.meanDuration_ms
     dur_ms = self._spinTracker.period_ms
     print("Performance: spin: {0:6.3f}ms @ {1:.1f}Hz ~{2:.0f}%"
           .format(avg_ms, 1000/dur_ms, avg_ms /dur_ms *100))
+
+  def printMemory(self, do_collect=False, report=False):
+    """ Prints just the information about memory usage
+    """
+    for i in range(2 if do_collect else 1):
+      used, free = self.memory
+      total = free +used
+      used_p = used/total*100
+      tot_kb = total/1024
+      s = "Memory     : " if report else ""
+      print("{0}{1:.0f}% of {2:.0f}kB heap RAM used.".format(s, used_p, tot_kb))
+      if do_collect:
+        gc.collect()
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @property

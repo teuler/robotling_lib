@@ -12,8 +12,8 @@ import robotling_lib.platform.esp32.board_huzzah32 as board
 # pylint: disable=bad-whitespace
 # SPI -----------------
 SCK        = board.SCK
-MOSI       = board.MOSI
-MISO       = board.MISO
+SDO        = board.SDO
+SDI        = board.SDI
 CS_ADC     = board.D4
 
 # I2C -----------------

@@ -10,7 +10,7 @@
 # 2020-08-08, v1.3 - pin/device assignments into separate files
 # ----------------------------------------------------------------------------
 from micropython import const
-from robotling_lib.platform.platform import platform
+from robotling_lib.platform.platform import platform as pf
 try:
   from robotling_board_version import BOARD_VER
 except ImportError:
@@ -33,7 +33,7 @@ I2C_FRQ    = const(400000)
 # ----------------------------------------------------------------------------
 # Robotling/Hexapod board connections/pins
 #
-if platform.ID == platform.ENV_ESP32_UPY:
+if pf.ID == pf.ENV_ESP32_UPY:
   # HUZZAH32 ESP32 board w/MicroPython
   if BOARD_VER == 100:
     from robotling_lib.platform.board_robotling_1_0_huzzah32 import *
@@ -42,25 +42,30 @@ if platform.ID == platform.ENV_ESP32_UPY:
   elif BOARD_VER == 200:
     from robotling_lib.platform.board_robotling_2_0_huzzah32 import *
 
-elif platform.ID == platform.ENV_ESP32_TINYPICO:
+elif pf.ID == pf.ENV_ESP32_TINYPICO:
   # TinyPICO ESP32 board w/MicroPython
   from robotling_lib.platform.board_hexapod_0_41_tinypico import *
 
-elif platform.ID == platform.ENV_CPY_SAM51:
+elif pf.ID == pf.ENV_CPY_SAM51:
   # SAM51 board w/CircuitPython
   from robotling_lib.platform.board_robotling_1_3_sam51 import *
 
-elif platform.ID == platform.ENV_CPY_FEATHERS2:
+elif pf.ID == pf.ENV_CPY_FEATHERS2:
   # ESP32s2 board w/CircuitPython
   if BOARD_VER == 042:
     from robotling_lib.platform.board_hexapod_0_42_featherS2 import *
+
+elif pf.ID == pf.ENV_ESP32_S2:
+  # ESP32s2 board w/MicroPython
+  if BOARD_VER == 042:
+    from robotling_lib.platform.board_hexapod_0_42_featherS2_mpy import *
 
 else:
   # No fitting board found or wtong board version number
   assert False, "No fitting board found"
 
 # ----------------------------------------------------------------------------
-if platform.ID in [platform.ENV_ESP32_UPY, platform.ENV_ESP32_TINYPICO]:
+if pf.ID in [pf.ENV_ESP32_UPY, pf.ENV_ESP32_TINYPICO]:
   # The battery is connected to the pin via a voltage divider (1/2), and thus
   # an effective voltage range of up to 7.8V (ATTN_11DB, 3.9V); the resolution
   # is 12 bit (WITDH_12BIT, 4096 -1):
@@ -70,7 +75,7 @@ if platform.ID in [platform.ENV_ESP32_UPY, platform.ENV_ESP32_TINYPICO]:
   def battery_convert(v):
     return v *0.001717522
 
-elif platform.ID == platform.ENV_CPY_NRF52:
+elif pf.ID == pf.ENV_CPY_NRF52:
   # For 3.3V ADC range and 16-bit ADC resolution = 3000mV/65536
   # 150K + 150K voltage divider on VBAT => compensation factor 2.0
   def battery_convert(v):
