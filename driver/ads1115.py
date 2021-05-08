@@ -12,12 +12,12 @@
 # The MIT License (MIT)
 # Copyright (c) 2018 Carter Nelson
 # ----------------------------------------------------------------------------
-import struct
-from ads1x15 import ADS1x15, Mode
+from -ads1x15 import ADS1x15, Mode
 
 __version__ = "0.1.0.0"
 CHIP_NAME   = "ads1115"
 CHAN_COUNT  = const(4)
+SHIFT_FACT  = const(0) # value >> 0
 
 # Data sample rates
 _ADS1115_CONFIG_DR = {
@@ -52,9 +52,7 @@ class ADS1115(ADS1x15):
   def _data_rate_default(self):
     return 128
 
-  def _conversion_value(self, raw_adc):
-    raw_adc = raw_adc.to_bytes(2, "big")
-    value = struct.unpack(">h", raw_adc)[0]
-    return value
+  def _chip_info(self):
+    return CHIP_NAME, __version__, SHIFT_FACT, CHAN_COUNT
 
 # ----------------------------------------------------------------------------

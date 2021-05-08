@@ -12,12 +12,12 @@
 # The MIT License (MIT)
 # Copyright (c) 2018 Carter Nelson
 # ----------------------------------------------------------------------------
-import struct
-from ads1x15 import ADS1x15, Mode
+from .ads1x15 import ADS1x15, Mode
 
 __version__ = "0.1.0.0"
 CHIP_NAME   = "ads1015"
 CHAN_COUNT  = const(4)
+SHIFT_FACT  = const(3) # value >> 3; why 4 in the Adafruit driver?!
 
 # Data sample rates
 _ADS1015_CONFIG_DR = {
@@ -51,9 +51,7 @@ class ADS1015(ADS1x15):
   def _data_rate_default(self):
     return 1600
 
-  def _conversion_value(self, raw_adc):
-    raw_adc = raw_adc.to_bytes(2, "big")
-    value = struct.unpack(">h", raw_adc)[0]
-    return value >> 4
+  def _chip_info(self):
+    return CHIP_NAME, __version__, SHIFT_FACT, CHAN_COUNT
 
 # ----------------------------------------------------------------------------
