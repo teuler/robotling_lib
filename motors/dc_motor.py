@@ -17,8 +17,8 @@ class DCMotor(object):
         channel assigned to this motor instance
     """
     self._driver = driver
-    self._chan = min(max(chan, 0), driver.channelCount-1)
-    self._spArr = [None]*driver.channelCount
+    self._chan = min(max(chan, 0), driver.channel_count-1)
+    self._spArr = [None]*driver.channel_count
     self.speed = 0
     print("DC motor {0} is ready.".format(["A", "B", "C", "D"][self._chan]))
 
@@ -30,6 +30,6 @@ class DCMotor(object):
   def speed(self, value):
     self._speed  = min(max(value, -100), 100)
     self._spArr[self._chan] = self._speed
-    self._driver.setMotorSpeed(self._spArr)
+    self._driver.set_motor_speed(self._spArr)
 
 # ----------------------------------------------------------------------------
