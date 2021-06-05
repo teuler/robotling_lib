@@ -10,7 +10,6 @@
 # 2020-05-18, First version
 #
 # ----------------------------------------------------------------------------
-
 try:
   ModuleNotFoundError
 except NameError:
@@ -92,7 +91,7 @@ class Parameter(object):
     if MICROPYTHON:
       try:
         newVal = np.clip(np.array(val), self._min, self._max)
-      except ValueError:
+      except TypeError:
         newVal = np.clip(np.array([val]), self._min, self._max)
       if self._maxStep == 0:
         self._val = newVal

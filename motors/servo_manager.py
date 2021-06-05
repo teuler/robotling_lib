@@ -110,11 +110,13 @@ class ServoManager(object):
     self.turn_all_off(deinit=True)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  '''
   @timed_function
   def move_timed(self, servos, pos, dt_ms=0, lin_vel=True):
     self.move(servos, pos, dt_ms)
+  '''
 
-  #@micropython.native
+  @micropython.native
   def move(self, servos, pos, dt_ms=0, lin_vel=True):
     """ Move the servos in the list to the positions given in `pos`.
         If `dt_ms` > 0, then it will be attempted that all servos reach the
@@ -152,8 +154,8 @@ class ServoManager(object):
         #print("dp=", dp)
         if lin_vel:
           # ... linear velocity
-          s = int(dp /nSteps)
-          cpl[n] = p +s
+          s = dp /nSteps
+          cpl[n] = int(p +s)
           ssl[n] = s
         else:
           # ... paraboloid trajectory
@@ -173,7 +175,16 @@ class ServoManager(object):
       n += 1
     self._nToMove = n
     self._dt_ms = dt_ms
-    self._nSteps = int(nSteps) -1
+    self._nSteps = int(nSteps) #-1
+
+    '''
+    print("_nToMove", self._nToMove, "_nSteps", self._nSteps, "mxs", mxs)
+    print("sdl", sdl)
+    print("tpl", tpl)
+    print("spo", spo)
+    print("ssl", ssl)
+    print("cpl", cpl)
+    '''
 
     # Initiate move
     if dt_ms == 0:

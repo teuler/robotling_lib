@@ -14,8 +14,8 @@ import robotling_lib.platform.esp32.board_tinypico as board
 # pylint: disable=bad-whitespace
 # SPI -----------------
 SCK        = board.SCK
-MOSI       = board.MOSI
-MISO       = board.MISO
+SDI        = board.SDI
+SDO        = board.SDO
 CS_ADC     = board.D05
 
 # I2C -----------------
@@ -34,13 +34,14 @@ BAUD       = 115200 #230400
 UART2_CH   = const(2)
 TX2        = board.D21
 RX2        = board.D22
-BAUD2      = 115200 #57600
+BAUD2      = 230400 #115200
 
 # LEDs ----------------
+RED_LED    = None
 YELLOW_LED = board.D27
-DS_CLOCK   = board.DSCL
-DS_DATA    = board.DSDT
-DS_POWER   = board.DSPW
+DS_CLOCK   = board.APA102_SCK
+DS_DATA    = board.APA102_DATA
+DS_POWER   = board.APA102_PWR
 
 # Other ---------------
 SERVO_FRQ  = 50
