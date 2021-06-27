@@ -5,13 +5,14 @@
 # (for CircuitPython)
 #
 # The MIT License (MIT)
-# Copyright (c) 2018-2020 Thomas Euler
+# Copyright (c) 2018-2021 Thomas Euler
 # 2018-11-25, v1
 # 2020-10-31, v1.1, generally CircuitPython
+# 2021-06-10, v1.1, use `pwmio` (CircuitPython v7)
 # ----------------------------------------------------------------------------
 from micropython import const
 from digitalio import DigitalInOut, Pull, Direction
-from pulseio import PWMOut as PWMOut_
+from pwmio import PWMOut as PWMOut_
 
 __version__ = "0.1.1.0"
 

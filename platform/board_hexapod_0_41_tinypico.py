@@ -27,14 +27,14 @@ SDA        = board.D26
 UART_CH    = const(1)
 TX         = board.D14
 RX         = board.D04
-BAUD       = 115200 #230400
+BAUD       = 230400
 
 # -> Maestro ----------
 # UART 2
 UART2_CH   = const(2)
 TX2        = board.D21
 RX2        = board.D22
-BAUD2      = 230400 #115200
+BAUD2      = 115200 #115200, 230400
 
 # LEDs ----------------
 RED_LED    = None

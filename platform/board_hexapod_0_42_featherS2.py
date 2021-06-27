@@ -3,8 +3,9 @@
 # Pins and devices on `hexapod' board, version 0.3.2 (1=client)
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-2021 Thomas Euler
 # 2020-11-15, v1
+# 2021-06-10, v1, MOSI->SDO, MISO->SDI
 # ----------------------------------------------------------------------------
 from micropython import const
 import board
@@ -12,8 +13,8 @@ import board
 # pylint: disable=bad-whitespace
 # SPI -----------------
 SCK        = board.SCK
-MOSI       = board.MOSI
-MISO       = board.MISO
+SDO        = board.MOSI
+SDI        = board.MISO
 CS_ADC     = board.IO3
 
 # I2C -----------------
@@ -42,6 +43,7 @@ DIO2       = board.IO7
 NEOPIX     = board.A10
 
 # LEDs ----------------
+RED_LED    = None
 BLUE_LED   = board.LED
 GREEN_LED  = board.IO6
 DS_CLOCK   = board.APA102_SCK
