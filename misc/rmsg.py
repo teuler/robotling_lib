@@ -9,6 +9,8 @@
 # 2021-01-18, v1.3, - Improved sending speed via optimized code
 #                   - Calibration commend added (`CAL`)
 # 2021-02-01, v1.4, Switched to binary format for efficiency
+# 2021-06-13, v1.5, - some bug fixes
+#                   - memory in KBytes
 # ----------------------------------------------------------------------------
 try:
   ModuleNotFoundError
@@ -27,32 +29,33 @@ except ModuleNotFoundError:
   const = lambda x : x
   import array
 
-__version__   = "0.1.4.0"
+__version__   = "0.1.5.0"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-TOK_REM     = 0
+TOK_REM     = const(0)
 # Remark, as a simple text message
 # </>REM ArbitraryText;
 
-TOK_VER     = 1
-# Information about software version (V) and free space in SRAM (M) in bytes
+TOK_VER     = const(1)
+# Information about software version (V) and free space in SRAM (M) in KBytes
 # >VER;
 # <VER V=100 M=1234;
 
-TOK_ERR     = 2
+TOK_ERR     = const(2)
 # Returns error code regarding the last message
 # with x,      command index, 255=not recognized
 #      y,      error code
 #      z,      error value (further specifies the error, e.g. an I2C error)
 # <ERR C=x E=y,z;
 
-TOK_ACK     = 3
+TOK_ACK     = const(3)
 # Acknowledges that command has been executed; when no error occurred and the
 # command has no specific response message defined (other than e.g. >ver;)
 # with x,      command index
 # </>ACK C=x;
 
-TOK_STA     = 4
+TOK_STA     = const(4)
+STA_S_LEN   = const(23)
 # Status request ...
 # >STA;
 #  <STA S=hs,ws,d,sp,sv,lv, hd,pt,rl, l0..l7, f0..f6;
@@ -72,12 +75,12 @@ TOK_STA     = 4
 //       ox,oy   odometry, change in position since last call, in mm
 '''
 
-TOK_XP0     = 5
+TOK_XP0     = const(5)
 # Move all servos to the default positions
 # >XP0;
 # <ACK C=5;
 
-TOK_GG0     = 6
+TOK_GG0     = const(6)
 # Prepare the gait generator (GGN)
 # with a=1/0/-1   GGN on/off/off+reset
 #      m,         mode; 1=translation, 2=walk, 3=single leg, 4=rotate
@@ -85,12 +88,12 @@ TOK_GG0     = 6
 # >GG0 M=a,m G=g;
 # <ACK C=<command>;
 
-TOK_GGE     = 7
+TOK_GGE     = const(7)
 # Perform an emergency stop
 # >GGE;
 # <ACK C=<command>;
 
-TOK_GGP     = 8
+TOK_GGP     = const(8)
 # Change walk parameters of the gait generator (GGN), positions etc.
 # with bo,        bodyYOffs; 0=down, 35=default up
 #      bs,        bodyYShift; ...
@@ -103,7 +106,7 @@ TOK_GGP     = 8
 # >GGP B=bs,px,pz,bx,by,bz T=bo,lh,tx,tz,ty;
 # <ACK C=<command>;
 
-TOK_GGT     = 9
+TOK_GGT     = const(9)
 '''
 - Change walk parameters of the gait generator (GGN), timing
   with ds,        delaySpeed_ms; ddjustible delay in ms
@@ -113,7 +116,7 @@ TOK_GGT     = 9
   <ACK C=<command>;
 '''
 
-TOK_GGQ     = 10
+TOK_GGQ     = const(10)
 # Change only most important walk parameters and request status quickly
 # with bo,        bodyYOffs; 0=down, 35=default up
 #      lh,        legLiftHeight; current travel height
@@ -125,31 +128,37 @@ TOK_GGQ     = 10
 # >GGQ T=bo,lh,tx,tz,ty D=ds A=ta;
 # <STA ...;
 
-TOK_CAL     = 11
+TOK_CAL     = const(11)
 # Start/stop collecting calibration data. At stop, calibration data is
 # processed. Calibration currently only includes servo load
 # with st         state, 1=start, 0=stop and process
 # >CAL S=st;
 # <ACK C=<command>;
 
-TOK_LastInd = 11
+TOK_LastInd = const(11)
 
-TOK_NONE    = 255
+TOK_NONE    = const(255)
 TOK_StrList = ["REM", "VER", "ERR", "ACK", "STA", "XP0",
                "GG0", "GGE", "GGP", "GGT", "GGQ", "CAL"]
 
-TOK_StrLen             = const(3)
-TOK_MaxPSets           = const(4)
-TOK_MaxValuesPerPSet   = const(32)
-TOK_MinRawMsgLen_bytes = const(8)
+_TOK_StrLen             = const(3)
+_TOK_MaxPSets           = const(4)
+_TOK_MaxValuesPerPSet   = const(32)
+_TOK_MinRawMsgLen_bytes = const(10) #8
 
-TOK_addrTok            = const(0)
-TOK_addrLen            = const(1)
-TOK_addrNPSets         = const(2)
-TOK_addrPSetStart      = const(3)
-TOK_offsPChar          = const(0)
-TOK_offsNVal           = const(1)
-TOK_offsVals           = const(2)
+_TOK_addrTok            = const(0)
+_TOK_addrCount          = const(1)
+_TOK_addrLen            = const(2) #1
+_TOK_addrNPSets         = const(3) #2
+_TOK_addrPSetStart      = const(4) #3
+_TOK_offsPChar          = const(0)
+_TOK_offsNVal           = const(1)
+_TOK_offsVals           = const(2)
+
+# For external access ...
+TOK_addrPSetStart       = const(_TOK_addrPSetStart)
+TOK_offsVals            = const(_TOK_offsVals)
+TOK_offsNVal            = const(_TOK_offsNVal)
 
 MSG_Client             = ">"
 MSG_Server             = "<"
@@ -160,12 +169,13 @@ MSG_DataSepChr         = ","
 # Message format: ['<' or '>'][int16 array][';']
 #
 # int16 0   [Token]   Token (as ID)
-#       1   [len]     Length of complete message in number of int16 values
-#       2   [nPSets]  Number of parameter sets (0 ... TOK_MaxPSets)
-#       3   [PChar0]  Type character of 1st parameter set
-#       4   [nVal0]   If `nPSets` > 0, number of values for 1st parameter set
-#       5   [p0.0]    1st value
-#       6   [p0.1]    2nd value
+#       1   [count]  Message number (to sychronize request-reply pairs)
+#       2   [len]     Length of complete message in number of int16 values
+#       3   [nPSets]  Number of parameter sets (0 ... _TOK_MaxPSets)
+#       4   [PChar0]  Type character of 1st parameter set
+#       5   [nVal0]   If `nPSets` > 0, number of values for 1st parameter set
+#       6   [p0.0]    1st value
+#       7   [p0.1]    2nd value
 #           ...
 #           [PChar1]  Type character of 2nd parameter set, if any
 #           [nVal1]   If `nPSets` > 0, number of values for 2nd parameter set
@@ -182,8 +192,10 @@ class Err():
   DeviceNotReady         = const(6)
   TooManyParamsOrData    = const(7)
   CmdStrIncomplete       = const(8)
-  NoReply                = const(9)
-  Unknown                = const(10)
+  MissedExpectedMsgCount = const(9)
+  MsgLikelyNotYetInBuf   = const(10)
+  NoReply                = const(11)
+  Unknown                = const(12)
 
 class PortType():
   NONE                   = const(0)
@@ -207,6 +219,7 @@ class RMsg(object):
     else:
       self._typeMsgOut = MSG_Client
     self._typeMsgIn = MSG_Client if typeMsgOut == MSG_Server else MSG_Server
+    self._count = 0
     self.reset(clearBuf=True)
 
   def reset(self, token=TOK_NONE, clearBuf=False):
@@ -214,14 +227,15 @@ class RMsg(object):
     """
     if clearBuf:
       self._sInBuf = ""
-    n = 3 +(2 +TOK_MaxValuesPerPSet) *TOK_MaxPSets
+    n = 3 +(2 +_TOK_MaxValuesPerPSet) *_TOK_MaxPSets
     msg = array.array("h", [0] *n)
-    msg[TOK_addrTok] = token
-    msg[TOK_addrLen] = TOK_addrPSetStart
-    msg[TOK_addrNPSets] = 0
+    msg[_TOK_addrTok] = token
+    msg[_TOK_addrCount] = -1
+    msg[_TOK_addrLen] = _TOK_addrPSetStart
+    msg[_TOK_addrNPSets] = 0
     self._msg = msg
-    self._addrPSet = array.array("H", [0]*TOK_MaxPSets)
-    self._nPSetVals = array.array("H", [0]*TOK_MaxPSets)
+    self._addrPSet = array.array("H", [0]*_TOK_MaxPSets)
+    self._nPSetVals = array.array("H", [0]*_TOK_MaxPSets)
     self._lastHexMsgIn = ""
     self._errC = Err.Ok
 
@@ -234,24 +248,36 @@ class RMsg(object):
     return self._errC
 
   @property
+  def in_buffer_len(self):
+    return len(self._sInBuf)
+
+  @property
+  def count(self):
+    return self._msg[_TOK_addrCount]
+
+  @property
   def token(self):
-    return self._msg[TOK_addrTok]
+    return self._msg[_TOK_addrTok]
 
   @token.setter
   def token(self, val):
     self.errC = Err.Ok
     if val < 0 or val > TOK_LastInd:
-      self._msg[TOK_addrTok] = TOK_NONE
+      self._msg[_TOK_addrTok] = TOK_NONE
       self._errC = Err.CmdNotRecognized
     else:
-      self._msg[TOK_addrTok] = self._tok = val
+      self._msg[_TOK_addrTok] = self._tok = val
+
+  @property
+  def msg_as_array(self):
+    return self._msg
 
   def __getitem__(self, iKD):
     i = iKD[0]
     j = iKD[1]
     msg = self._msg
-    if i >= 0 and i < msg[TOK_addrNPSets] and j >= 0 and j < self._nPSetVals[i]:
-      return msg[self._addrPSet[i] +TOK_offsVals +j]
+    if i >= 0 and i < msg[_TOK_addrNPSets] and j >= 0 and j < self._nPSetVals[i]:
+      return msg[self._addrPSet[i] +_TOK_offsVals +j]
     else:
       return None
 
@@ -259,8 +285,8 @@ class RMsg(object):
     i = iKD[0]
     j = iKD[1]
     msg = self._msg
-    if i >= 0 and i < msg[TOK_addrNPSets] and j >= 0 and j < self._nPSetVals[i]:
-      self._msg[self._addrPSet[i] +TOK_offsVals +j] = val
+    if i >= 0 and i < msg[_TOK_addrNPSets] and j >= 0 and j < self._nPSetVals[i]:
+      self._msg[self._addrPSet[i] +_TOK_offsVals +j] = val
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   #@timed_function
@@ -268,21 +294,21 @@ class RMsg(object):
     """ Add a parameter key with data
     """
     n = len(data)
-    assert n <= TOK_MaxValuesPerPSet, "Too many values in parameter set"
-    i = self._msg[TOK_addrNPSets]
-    assert i < TOK_MaxPSets, "Too many parameter sets"
+    assert n <= _TOK_MaxValuesPerPSet, "Too many values in parameter set"
+    i = self._msg[_TOK_addrNPSets]
+    assert i < _TOK_MaxPSets, "Too many parameter sets"
     if i == 0:
-      p = TOK_addrPSetStart
+      p = _TOK_addrPSetStart
     else:
-      p = self._addrPSet[i-1] +TOK_offsVals +self._nPSetVals[i-1]
-    self._msg[p +TOK_offsPChar] = ord(key[0])
-    self._msg[p +TOK_offsNVal] = n
-    q = p +TOK_offsVals
+      p = self._addrPSet[i-1] +_TOK_offsVals +self._nPSetVals[i-1]
+    self._msg[p +_TOK_offsPChar] = ord(key[0])
+    self._msg[p +_TOK_offsNVal] = n
+    q = p +_TOK_offsVals
     self._msg[q:q+n] = array.array("h", data)
     self._nPSetVals[i] = n
     self._addrPSet[i] = p
-    self._msg[TOK_addrNPSets] += 1
-    self._msg[TOK_addrLen] += TOK_offsVals +n
+    self._msg[_TOK_addrNPSets] += 1
+    self._msg[_TOK_addrLen] += _TOK_offsVals +n
 
   #@timed_function
   def from_hex_string(self, sHex):
@@ -293,13 +319,13 @@ class RMsg(object):
     else:
       self._errC = Err.Ok
       msg = array.array("h", binascii.unhexlify(sHex))
-      n = msg[TOK_addrNPSets]
+      n = msg[_TOK_addrNPSets]
       if n > 0:
-        p = TOK_addrPSetStart
+        p = _TOK_addrPSetStart
         for iP in range(n):
           self._addrPSet[iP] = p
-          self._nPSetVals[iP] = msg[p +TOK_offsNVal]
-          p += TOK_offsVals +msg[p +TOK_offsNVal]
+          self._nPSetVals[iP] = msg[p +_TOK_offsNVal]
+          p += _TOK_offsVals +msg[p +_TOK_offsNVal]
       self._msg = msg
     return self._errC
 
@@ -307,57 +333,72 @@ class RMsg(object):
     """ Convert message to hexlified string
     """
     msg = self._msg
-    n = msg[TOK_addrLen]
+    n = msg[_TOK_addrLen]
     return self._typeMsgOut +binascii.hexlify(msg[:n]).decode() +MSG_EndChr
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  #@micropython.native
   def __repr__(self):
     msg = self._msg
-    s = self._typeMsgOut +TOK_StrList[msg[TOK_addrTok]]
-    n = msg[TOK_addrNPSets]
-    p = TOK_addrPSetStart
+    s = self._typeMsgOut +TOK_StrList[msg[_TOK_addrTok]]
+    n = msg[_TOK_addrNPSets]
     if n > 0:
-      p = TOK_addrPSetStart
+      p = _TOK_addrPSetStart
       for i in range(n):
-        s += " " +chr(msg[p +TOK_offsPChar]) +"="
-        m = msg[p +TOK_offsNVal]
+        s += " " +chr(msg[p +_TOK_offsPChar]) +"="
+        m = msg[p +_TOK_offsNVal]
         for j in range(m):
-          s += str(msg[p +TOK_offsVals +j])
+          s += str(msg[p +_TOK_offsVals +j])
           s += "," if j < m-1 else ""
+        p += _TOK_offsVals +m
     return s +MSG_EndChr
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   #@timed_function
-  def send(self, tout_ms=20):
-    """ Send message as string using the respective serial interface and
-        returns the reply, if any, as an array (= a message w/o start and end
-        character). Accepts a timeout in [ms]
+  def send(self, tout_ms=20, await_reply=True, out_count=None):
+    """ Send message as string using the respective serial interface. Checks
+        for a reply if `await_reply` is True and returns it, if any, as an
+        array (=a message w/o start and end character). `out_count` overwrites
+        the out's message `count` field. Accepts a timeout `tout_ms` in [ms].
     """
     self._lastHexMsgIn = ""
     msg = self._msg
-    tok = msg[TOK_addrTok]
+    tok = msg[_TOK_addrTok]
     if tok < 0 or tok > TOK_LastInd:
       self._errC = Err.CmdNotRecognized
     else:
-      n = msg[TOK_addrLen]
+      cnt = out_count if not out_count is None else self._count
+      msg[_TOK_addrCount] = cnt
+      self._count = cnt +1
+      #print("send count-to-send", msg[_TOK_addrCount])
+      n = msg[_TOK_addrLen]
       s = self._typeMsgOut +binascii.hexlify(msg[:n]).decode() +MSG_EndChr
       self.write(s)
-      if tout_ms > 0 and self._poll:
-        self._poll(tout_ms)
-      self._errC = Err.Ok if self.receive() else Err.NoReply
+      if await_reply:
+        if tout_ms > 0 and self._poll:
+          self._poll(tout_ms)
+        #self._errC = Err.Ok if self.receive(in_count=cnt) else Err.NoReply
+        #print("send before-receive, in_count", cnt)
+        self.receive(in_count=cnt)
     return self._lastHexMsgIn
 
   #@timed_function
-  #micropython.native
-  def receive(self, tout_ms=20):
+  def receive_timed(self, tout_ms=20, in_count=None):
+    return self.receive(tout_ms, in_count)
+
+  #@micropython.native
+  def receive(self, tout_ms=20, in_count=None):
     """ Read from serial connection and check if a complete message is
-        available. Returns an error code
+        available. If `in_count`is defined, discards all messages with a lower
+        count; if received message have a higher count, return an error code
     """
     self._errC = Err.Ok
+    self._lastHexMsgIn = ""
+    #print("receive any=", self.any())
     if self.any() > 0:
       # Characters are waiting; add them to the buffer
       buf = self._sInBuf +self.readline().decode()
-      if len(buf) < TOK_MinRawMsgLen_bytes:
+      if len(buf) < _TOK_MinRawMsgLen_bytes:
         # Too few characters for a complete message
         self._sInBuf = buf
         return False
@@ -366,18 +407,50 @@ class RMsg(object):
       tmi = self._typeMsgIn
       tmp = buf.split(tmi)
       n = len(tmp)
-      i = 1
+      i = 0
+      #print("receive start:")
+      #print(tmp, i, self._sInBuf)
       while i < n:
         if len(tmp[i]) == 0:
           i += 1
-        else:
-          if MSG_EndChr in tmp[i]:
-            # Contains a complete message
-            msg = tmp[i][:-1]
-            self.from_hex_string(msg)
+          continue
+        if wec := MSG_EndChr in tmp[i]:
+          # Contains a complete message
+          msg = tmp[i][:-1]
+          self.from_hex_string(msg)
+          cnt = self._msg[_TOK_addrCount]
+          #print("receive msg={0}".format(cnt))
+          if in_count is None or in_count == cnt:
+            # The message requested is equal to the received (or the caller
+            # does not care), return the message
+            #print("receive -> success")
             self._lastHexMsgIn = msg
-            self._sInBuf = tmi +tmi.join(tmp[2:])
-            return self._errC == Err.Ok
+            self._sInBuf = tmi +tmi.join(tmp[i+1:])
+            #print(tmp, i, self._sInBuf)
+            return True
+          if in_count:
+            if in_count < cnt:
+              # An older message was requested (than the received), return
+              # an error but keep the current message in the buffer
+              #print("receive msg={0} but expected={1} -> error"
+              #      .format(cnt, in_count))
+              self._sInBuf = tmi +tmi.join(tmp[i:])
+              self._errC = Err.MissedExpectedMsgCount
+              #print(tmp, i, self._sInBuf)
+              return False
+            elif in_count > cnt:
+              # A younger message was requested (that the received), look
+              # at the next message in the buffer ...
+              #print("receive msg={0}, expected={1}, i={2}, n={3} -> i++"
+              #      .format(cnt, in_count, i, n))
+              i += 1
+              #print("received now", tmp, i, self._sInBuf)
+              continue
+
+      #print("receive msg not found")
+      self._sInBuf = tmi +tmi.join(tmp[i:]) if not wec else ""
+      self._errC = Err.MsgLikelyNotYetInBuf
+      #print(tmp, i, self._sInBuf)
     return False
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

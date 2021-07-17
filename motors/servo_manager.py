@@ -9,10 +9,6 @@
 # 2020-10-31, v1.2, use `languageID` instead of `ID`
 # 2021-02-14, v1.3, small improvements towards more performance
 # 2021-02-28, v1.4, compatibility w/ rp2
-#
-# Issues:
-# 2021-02-14, Does not work with MicroPython 1.14, because Timer and UART use
-#             seem to clash ...
 # ----------------------------------------------------------------------------
 import time
 import array
@@ -23,14 +19,17 @@ import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.platform.platform import platform as pf
 if pf.languageID == pf.LNG_MICROPYTHON:
   from machine import Timer
+  TIMER_AVAIL = const(1)
+elif pf.languageID == pf.LNG_CIRCUITPYTHON:
+  TIMER_AVAIL = const(0)
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
 # pylint: disable=bad-whitespace
 __version__       = "0.1.4.0"
-RATE_MS           = const(20)
+RATE_MS           = const(15)  # 5=hangs, 15...20=ok, 25=not continues
 HARDWARE_TIMER    = const(0)
-_STEP_ARRAY_MAX   = const(500)
+_STEP_ARRAY_MAX   = const(500) # 500
 # pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
@@ -61,15 +60,12 @@ class ServoManager(object):
     self._nToMove = 0                                     # # of servos to move
     self._dt_ms = 0                                       # Time period [ms]
     self._nSteps = 0                                      # # of steps to move
-    '''
-    self._Lock = uasyncio.Lock()
-    '''
-    self._isMoving = uasyncio.Event()
+    self._mm18 = None
+    self._isMoving = uasyncio.ThreadSafeFlag()
     self._isFirstMove = True
-    self._Timer = Timer() if pf.ID == pf.ENV_MPY_RP2 else Timer(HARDWARE_TIMER)
-    '''
-    self._Timer.init(period=RATE_MS, mode=Timer.PERIODIC, callback=self._cb)
-    '''
+    self._Timer = None
+    if TIMER_AVAIL:
+      self._Timer = Timer() if pf.ID == pf.ENV_MPY_RP2 else Timer(HARDWARE_TIMER)
 
   def add_servo(self, i, servoObj, pos=0):
     """ Add at the entry `i` of the servo list the servo object, which has to
@@ -86,6 +82,7 @@ class ServoManager(object):
       if self._isVerbose:
         print("Add servo #{0:-2.0f}, at {1} us"
               .format(i, int(self._servoPos[i])))
+      self._mm18 = servoObj._mm18
 
   def set_servo_type(self, i, type):
     """ Change servo type (see `TYPE_xxx`)
@@ -110,11 +107,9 @@ class ServoManager(object):
     self.turn_all_off(deinit=True)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  '''
   @timed_function
   def move_timed(self, servos, pos, dt_ms=0, lin_vel=True):
-    self.move(servos, pos, dt_ms)
-  '''
+    self.move(servos, pos, dt_ms, lin_vel)
 
   @micropython.native
   def move(self, servos, pos, dt_ms=0, lin_vel=True):
@@ -122,9 +117,8 @@ class ServoManager(object):
         If `dt_ms` > 0, then it will be attempted that all servos reach the
         position at the same time (that is after `dt_ms` ms)
     """
-    if self._isMoving.is_set():
-      # Stop ongoing move
-      self._isMoving.clear()
+    # Stop ongoing move
+    self._isMoving._flag = False
 
     # Prepare new move
     n = 0
@@ -176,15 +170,12 @@ class ServoManager(object):
     self._nToMove = n
     self._dt_ms = dt_ms
     self._nSteps = int(nSteps) #-1
-
-    '''
-    print("_nToMove", self._nToMove, "_nSteps", self._nSteps, "mxs", mxs)
-    print("sdl", sdl)
-    print("tpl", tpl)
-    print("spo", spo)
-    print("ssl", ssl)
-    print("cpl", cpl)
-    '''
+    #print("_nToMove", self._nToMove, "_nSteps", self._nSteps, "mxs", mxs)
+    #print("sdl", sdl)
+    #print("tpl", tpl)
+    #print("spo", spo)
+    #print("ssl", ssl)
+    #print("cpl", cpl)
 
     # Initiate move
     if dt_ms == 0:
@@ -196,12 +187,13 @@ class ServoManager(object):
       if self._isFirstMove:
         self._Timer.init(period=RATE_MS, mode=Timer.PERIODIC, callback=self._cb)
         self._isFirstMove = False
-      self._isMoving.set()
+      self._isMoving._flag = True
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   #@timed_function
+  #@micropython.native
   def _cb(self, value):
-    if self._isMoving.is_set():
+    if self._isMoving._flag:
       # Update every servo in the list
       nSt = self._nSteps
       sdl = self._SIDList
@@ -211,32 +203,38 @@ class ServoManager(object):
       spo = self._servoPos
       ser = self._Servos
       mxs = self._max_steps
-      for iS in range(self._nToMove):
+      iS = self._nToMove -1
+      while iS >= 0:
         if not spo[sdl[iS]] == tpl[iS]:
           if nSt > 0:
             # Move is ongoing, update servo position ...
-            ser[sdl[iS]].write_us(cpl[iS])
+            ser[sdl[iS]].write_us(cpl[iS]) #, prepare_only=True)
+            '''
             if ssl[iS] == 0:
               # Paraboloid trajectory
               cpl[iS] += self._stepLists[iS*mxs +nSt]
             else:
               # Linear trajectory
               cpl[iS] += ssl[iS]
+            '''
+            cpl[iS] += ssl[iS]
           else:
             # Move has ended, therefore set servo to the target position
             spo[sdl[iS]] = tpl[iS]
-            ser[sdl[iS]].write_us(spo[sdl[iS]])
+            ser[sdl[iS]].write_us(spo[sdl[iS]]) #, prepare_only=True)
+        iS -= 1
+      #self._mm18.execute()
       if nSt > 0:
         self._nSteps = nSt -1
       else:
         # Move is done
-        self._isMoving.clear()
+        self._isMoving._flag = False
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @property
   def is_moving(self):
     """ Returns True if a move is still ongoing
     """
-    return self._isMoving.is_set()
+    return self._isMoving._flag
 
 # ----------------------------------------------------------------------------
