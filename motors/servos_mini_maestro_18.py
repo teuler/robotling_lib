@@ -229,6 +229,7 @@ class MiniMaestro18:
       nCh = 0
       for iCh, Ch in enumerate(self.channels):
         if Ch._prepared:
+          Ch._prepared = False
           cmd = cmd +bytearray([Ch._cmd[4], Ch._cmd[5]])
           if nCh == 0:
             cmd[4] = iCh

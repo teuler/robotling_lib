@@ -103,7 +103,7 @@ class RobotlingBase(object):
       # Initialize analog sensor driver
       from robotling_lib.driver import mcp3208
       dev = None if pf.ID == pf.ENV_ESP32_S2 else 1
-      self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.SDI, rb.SDO, spidev=dev)
+      self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.SDO, rb.SDI, spidev=dev)
       self._MCP3208 = mcp3208.MCP3208(self._SPI, rb.CS_ADC)
 
     # RGB Pixel management
