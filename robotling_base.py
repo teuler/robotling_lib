@@ -97,6 +97,8 @@ class RobotlingBase(object):
     self._NPx = None
     self._DS = None
 
+    gc.collect()
+
     if MCP3208:
       # Initialize analog sensor driver
       from robotling_lib.driver import mcp3208
@@ -142,6 +144,7 @@ class RobotlingBase(object):
     self._spin_t_last_ms = 0
     self._spin_callback = None
     self._spinTracker = TimeTracker()
+    gc.collect()
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @property
