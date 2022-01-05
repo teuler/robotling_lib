@@ -4,10 +4,11 @@
 # all functions and properties of a specific board
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-22 Thomas Euler
 # 2020-09-04, v1
 # 2020-10-31, v1.1, use `languageID` instead of `ID`
 # 2020-12-21, v1.2, moved all RGB pixel management here
+# 2022-01-02, v1.3, Nano RP2040 Connect added, memory functions refined
 # ----------------------------------------------------------------------------
 import gc
 import array
@@ -20,9 +21,13 @@ from robotling_lib.misc.color_wheel import getColorFromWheel
 from robotling_lib.platform.platform import platform as pf
 if pf.languageID == pf.LNG_MICROPYTHON:
   import time
-  from robotling_lib.platform.esp32 import busio
-  import robotling_lib.platform.esp32.dio as dio
   from machine import Pin
+  if pf.isRP2:
+    import robotling_lib.platform.rp2.dio as dio
+    from robotling_lib.platform.rp2 import busio
+  else:
+    import robotling_lib.platform.esp32.dio as dio
+    from robotling_lib.platform.esp32 import busio
 elif pf.languageID == pf.LNG_CIRCUITPYTHON:
   import robotling_lib.platform.circuitpython.time as time
   from robotling_lib.platform.circuitpython import busio
@@ -30,7 +35,9 @@ elif pf.languageID == pf.LNG_CIRCUITPYTHON:
 else:
   print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__      = "0.1.2.0"
+# pylint: disable=bad-whitespace
+__version__     = "0.1.3.0"
+# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class RobotlingBase(object):
@@ -96,13 +103,13 @@ class RobotlingBase(object):
     self.onboardLED = None
     self._NPx = None
     self._DS = None
-
-    gc.collect()
+    self._collect()
 
     if MCP3208:
       # Initialize analog sensor driver
       from robotling_lib.driver import mcp3208
       dev = None if pf.ID == pf.ENV_ESP32_S2 else 1
+      dev = 0 if pf.isRP2 else dev
       self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.SDO, rb.SDI, spidev=dev)
       self._MCP3208 = mcp3208.MCP3208(self._SPI, rb.CS_ADC)
 
@@ -110,7 +117,10 @@ class RobotlingBase(object):
     if neoPixel:
       # Initialize Neopixel (connector)
       if pf.languageID == pf.LNG_MICROPYTHON:
-        from robotling_lib.platform.esp32.neopixel import NeoPixel
+        if pf.isRP2:
+          from robotling_lib.platform.rp2.neopixel import NeoPixel
+        else:
+          from robotling_lib.platform.esp32.neopixel import NeoPixel
       elif pf.languageID == pf.LNG_CIRCUITPYTHON:
         from robotling_lib.platform.circuitpython.neopixel import NeoPixel
       self._NPx = NeoPixel(rb.NEOPIX, 1)
@@ -144,12 +154,14 @@ class RobotlingBase(object):
     self._spin_t_last_ms = 0
     self._spin_callback = None
     self._spinTracker = TimeTracker()
-    gc.collect()
+    self._collect()
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  def _collect(self):
+    gc.collect()
+
   @property
   def memory(self):
-    gc.collect()
     return (gc.mem_alloc(), gc.mem_free())
 
   @property
@@ -267,7 +279,8 @@ class RobotlingBase(object):
   def connectToWLAN(self):
     """ Connect to WLAN if not already connected
     """
-    if pf.ID in [pf.ENV_ESP32_UPY, pf.ENV_ESP32_TINYPICO, pf.ENV_ESP32_S2]:
+    if pf.ID in [pf.ENV_ESP32_UPY, pf.ENV_ESP32_TINYPICO, pf.ENV_ESP32_S2,
+                 pf.ENV_MPY_RP2_NANOCONNECT]:
       import network
       from NETWORK import my_ssid, my_wp2_pwd
       if not network.WLAN(network.STA_IF).isconnected():
@@ -293,18 +306,27 @@ class RobotlingBase(object):
     print("Performance: spin: {0:6.3f}ms @ {1:.1f}Hz ~{2:.0f}%"
           .format(avg_ms, 1000/dur_ms, avg_ms /dur_ms *100))
 
-  def printMemory(self, do_collect=False, report=False):
+  def printMemory(self, do_collect=False, report=False, as_str=False):
     """ Prints just the information about memory usage
     """
-    for i in range(2 if do_collect else 1):
-      used, free = self.memory
-      total = free +used
-      used_p = used/total*100
-      tot_kb = total/1024
-      s = "Memory     : " if report else ""
-      print("{0}{1:.0f}% of {2:.0f}kB heap RAM used.".format(s, used_p, tot_kb))
-      if do_collect:
-        gc.collect()
+    used, free = self.memory
+    total = free +used
+    if do_collect:
+      self._collect()
+      used, free1 = self.memory
+      freed = free1 -free
+    usedp = used /total *100
+    tot_kb = total /1024
+    s1 = "Memory     : " if report else ""
+    s2 = "" if not(do_collect) else " ({0} bytes freed)".format(freed)
+    s3 = "{0}{1:.0f}% of {2:.0f}kB RAM used{3}.".format(s1, usedp, tot_kb, s2)
+    if not(as_str):
+      print(s3)
+    else:
+      return s3
+
+  def collectMemory(self):
+    return self.printMemory(True, False, True)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @property

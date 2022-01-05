@@ -3,10 +3,11 @@
 # Class for servos controlled by the Mini Maestro 18-channel servo driver
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-22 Thomas Euler
 # 2020-05-01, v1
 # 2020-10-31, v1.2, use `languageID` instead of `ID`
 # 2021-02-14, v1.3, small changes towards more performance
+# 2022-01-04, v1.4, Nano RP2040 Connect added
 #
 # The MIT License (MIT)
 # Copyright (c) 2016 Steven L. Jacobs (Maestro Python library)
@@ -32,18 +33,14 @@
 # THE SOFTWARE.
 # ----------------------------------------------------------------------------
 import time
+from machine import UART, Pin
 from micropython import const
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.motors.servo_base import ServoBase
 import robotling_lib.misc.ansi_color as ansi
 
-from robotling_lib.platform.platform import platform
-if platform.languageID == platform.LNG_MICROPYTHON:
-  from robotling_lib.platform.esp32.busio import UART
-else:
-  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
-
-__version__      = "0.1.3.0"
+# pylint: disable=bad-whitespace
+__version__      = "0.1.4.0"
 CHIP_NAME        = "minMaestro18"
 CHAN_COUNT       = const(18)
 DEF_RANGE_DEG    = (0, 180)
@@ -62,6 +59,7 @@ _MULT_TARGETS    = const(0x1F)
 _IS_MOVING       = const(0x13)
 _GET_ERROR       = const(0x21)
 _GET_POSITION    = const(0x10)
+# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class ServoChannel(ServoBase):
@@ -198,11 +196,10 @@ class MiniMaestro18:
   """
   def __init__(self, _tx, _rx, ch=_UART_CH, baud=_BAUDRATE, dev=_ADDRESS):
     try:
-      self._uart = UART(ch, baudrate=baud, tx=_tx, rx=_rx)
-      self._uart.init(bits=8, parity=None, stop=1)
+      self.reset()
+      self._uart = UART(ch, baudrate=baud, tx=Pin(_tx), rx=Pin(_rx))
       self._iDev = dev
       self.channels = ServoChannels(self)
-      self.reset()
       self._isReady = True
     except:
       pass
@@ -256,7 +253,10 @@ class MiniMaestro18:
   def deinit(self):
     """ Release the UART
     """
-    self._uart.deinit()
+    try:
+      self._uart.deinit()
+    except AttributeError:
+       pass  
     self.reset()
 
 # ----------------------------------------------------------------------------

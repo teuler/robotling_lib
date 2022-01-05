@@ -3,11 +3,12 @@
 # Class for 8-channel 12-bit SPI A/D converter MCP3208 driver
 #
 # The MIT License (MIT)
-# Copyright (c) 2018-2021 Thomas Euler
+# Copyright (c) 2018-2022 Thomas Euler
 # 2018-09-20, v1
 # 2018-11-25, v1.1, now uses dio_*.py to access machine
 # 2020-01-01, v1.2, micropython.native
 # 2021-05-08, v1.2, property naming changed
+# 2022-01-02, v1.3, rp2 added as option
 # ----------------------------------------------------------------------------
 import array
 from micropython import const
@@ -16,7 +17,10 @@ import robotling_lib.misc.ansi_color as ansi
 
 from robotling_lib.platform.platform import platform as pf
 if pf.languageID == pf.LNG_MICROPYTHON:
-  import robotling_lib.platform.esp32.dio as dio
+  if pf.isRP2:
+    import robotling_lib.platform.rp2.dio as dio
+  else:    
+    import robotling_lib.platform.esp32.dio as dio
 elif pf.languageID == pf.LNG_CIRCUITPYTHON:
   import robotling_lib.platform.circuitpython.dio as dio
 else:

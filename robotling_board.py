@@ -3,11 +3,12 @@
 # Global definitions for robotling board.
 #
 # The MIT License (MIT)
-# Copyright (c) 2018-21 Thomas Euler
+# Copyright (c) 2018-22 Thomas Euler
 # 2018-09-13, v1
 # 2018-12-22, v1.1 - pins for M4 feather express added
 # 2020-01-01, v1.2 - pins for hexapod robotling added
 # 2020-08-08, v1.3 - pin/device assignments into separate files
+# 2022-01-03, v1.4 - rp2040 Nano Connect added
 # ----------------------------------------------------------------------------
 from micropython import const
 from robotling_lib.platform.platform import platform as pf
@@ -46,6 +47,10 @@ if pf.ID == pf.ENV_ESP32_UPY:
 elif pf.ID == pf.ENV_ESP32_TINYPICO:
   # TinyPICO ESP32 board w/MicroPython
   from robotling_lib.platform.board_hexapod_0_41_tinypico import *
+  
+elif pf.ID == pf.ENV_MPY_RP2_NANOCONNECT:
+  # rp2040 Nano Connect w/MicroPython
+  from robotling_lib.platform.board_hexapod_0_41_rp2nanoconnect import *
 
 elif pf.ID == pf.ENV_CPY_SAM51:
   # SAM51 board w/CircuitPython
