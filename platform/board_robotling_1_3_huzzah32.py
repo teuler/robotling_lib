@@ -3,8 +3,9 @@
 # Pins and devices on `robotling" board, version 1.3
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-21 Thomas Euler
 # 2020-08-01, v1
+# 2021-09-23, v1.1, MISO -> SDI, MOSI -> SDO
 # ----------------------------------------------------------------------------
 from micropython import const
 import robotling_lib.platform.esp32.board_huzzah32 as board

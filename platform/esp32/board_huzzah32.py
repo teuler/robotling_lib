@@ -3,12 +3,13 @@
 # Hardware specific pin definitions.
 #
 # The MIT License (MIT)
-# Copyright (c) 2018-2020 Thomas Euler
+# Copyright (c) 2018-2021 Thomas Euler
 # 2018-10-03, v1
+# 2021-09-23, v1.1, MISO -> SDI, MOSI -> SDO
 # ----------------------------------------------------------------------------
 from micropython import const
 
-__version__ = "0.1.0.0"
+__version__ = "0.1.1.0"
 
 # ----------------------------------------------------------------------------
 # Adafruit Huzzah32
@@ -57,8 +58,8 @@ A11  = const(12)  # ch2
 LED  = const(13)  # red onboard LED
 TX   = const(17)  # Serial1
 RX   = const(16)  # Serial1
-SDO  = const(19)
-SDI  = const(18)
+SDI  = const(19)  # former MISO
+SDO  = const(18)  # former MOSI
 SCK  = const(5)
 DAC1 = const(25)
 DAC2 = const(26)

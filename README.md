@@ -1,7 +1,7 @@
 # robotling_lib
 ["robotling"](https://github.com/teuler/robotling) is a simple circuit board to control small robots, mainly for educational purpose. This repository contains robotling-related hardware and software libraries.
 
-> Note: _Several of the drivers are based on code developed by [Adafruit](https://github.com/adafruit); for details on source, copyright, original authors etc., see information in respective file header._ 
+> Note: _Several of the drivers are based on code developed by [Adafruit](https://github.com/adafruit); for details on source, copyright, original authors etc., see information in respective file header._
 
 For an overview of some of the supported hardware, see ["Sensoren etc."](https://github.com/teuler/robotling/wiki/Sensoren-etc) (in German).
 
@@ -15,12 +15,14 @@ For an overview of some of the supported hardware, see ["Sensoren etc."](https:/
 ├───motors                 - Motor and servo controller classes
 ├───platform               - Support for different platforms
 │   ├───esp32              - For ESP32 based modules, e.g. HUZZAH32, TinyPICO
-|   |   └───register       - Register classes (like in CircuitPython)        
+|   |   └───register       - Register classes (like in CircuitPython)      
+|   ├───rp2  
 │   └───circuitpython      - For Adafruit Feathers (e.g. M4 Express)
-│       ├───other     
+│       ├───bus_device
+|       ├───other     
 │       └───register
-├───remote                 - MQTT telemetry, BLE support (ESP32 only) 
-└───sensors                - Sensor classes 
+├───remote                 - MQTT telemetry, BLE support (ESP32 only)
+└───sensors                - Sensor classes
 ```
 
 ## List of Classes
@@ -35,4 +37,3 @@ Device drivers (`driver`):
 - `mcp3208.py` - Class for 8-channel 12-bit SPI A/D converter MCP3208 driver
 - `pca9685.py` - Class for PCA9685 16-channel servo driver
 - `ssd1327.py` - Class for SSD1327 OLED monochrom display (I2C)
-
