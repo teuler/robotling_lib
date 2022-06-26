@@ -3,8 +3,11 @@
 # Class for servos controlled by the Mini Maestro 18-channel servo driver
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-22 Thomas Euler
 # 2020-05-01, v1
+# 2020-10-31, v1.2, use `languageID` instead of `ID`
+# 2021-02-14, v1.3, small changes towards more performance
+# 2022-01-04, v1.4, Nano RP2040 Connect added
 #
 # The MIT License (MIT)
 # Copyright (c) 2016 Steven L. Jacobs (Maestro Python library)
@@ -30,21 +33,14 @@
 # THE SOFTWARE.
 # ----------------------------------------------------------------------------
 import time
+from machine import UART, Pin
 from micropython import const
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.motors.servo_base import ServoBase
 import robotling_lib.misc.ansi_color as ansi
 
-from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
-  from robotling_lib.platform.esp32.busio import UART
-elif platform.ID == platform.ENV_CPY_SAM51:
-  pass
-else:
-  print("ERROR: No matching hardware libraries in `platform`.")
-
-__version__      = "0.1.0.0"
+# pylint: disable=bad-whitespace
+__version__      = "0.1.4.0"
 CHIP_NAME        = "minMaestro18"
 CHAN_COUNT       = const(18)
 DEF_RANGE_DEG    = (0, 180)
@@ -63,6 +59,7 @@ _MULT_TARGETS    = const(0x1F)
 _IS_MOVING       = const(0x13)
 _GET_ERROR       = const(0x21)
 _GET_POSITION    = const(0x10)
+# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class ServoChannel(ServoBase):
@@ -109,6 +106,7 @@ class ServoChannel(ServoBase):
     self.set_acceleration(accel)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  @micropython.native
   def write_us(self, t_us, prepare_only=False):
     """ Move to a position given by the timing `t_us`; if `prepare_only` is
         True, the command for the move is stored and can be triggered using
@@ -123,12 +121,13 @@ class ServoChannel(ServoBase):
         d = int(t) *self._resolution
       else:
         d = int((r[1] -t +r[0]) *self._resolution)
-    self._cmd[4] = d & 0x7F
-    self._cmd[5] = (d >> 7) & 0x7F
+    cmd = self._cmd
+    cmd[4] = d & 0x7F
+    cmd[5] = (d >> 7) & 0x7F
     self._prepared = prepare_only
     self._mm18._nPrepared += 1 if prepare_only else 0
     if not prepare_only:
-      self._mm18._uart.write(self._cmd)
+      self._mm18._uart.write(cmd)
     if self._verbose:
       print("angle={0}°, t_us={1}, duty={2}".format(self._angle, t_us, d))
 
@@ -158,7 +157,7 @@ class ServoChannel(ServoBase):
     """
     self._mm18._uart.write(bytearray([_START, self._mm18._iDev, _GET_ERROR]))
     res = self._mm18._uart.read()
-    if len(res) == 2:
+    if res is not None and len(res) == 2:
       return res[0] +(res[1] << 8)
     else:
       return 0xFFFF
@@ -197,10 +196,10 @@ class MiniMaestro18:
   """
   def __init__(self, _tx, _rx, ch=_UART_CH, baud=_BAUDRATE, dev=_ADDRESS):
     try:
-      self._uart = UART(ch, baudrate=baud, tx=_tx, rx=_rx)
+      self.reset()
+      self._uart = UART(ch, baudrate=baud, tx=Pin(_tx), rx=Pin(_rx))
       self._iDev = dev
       self.channels = ServoChannels(self)
-      self.reset()
       self._isReady = True
     except:
       pass
@@ -227,6 +226,7 @@ class MiniMaestro18:
       nCh = 0
       for iCh, Ch in enumerate(self.channels):
         if Ch._prepared:
+          Ch._prepared = False
           cmd = cmd +bytearray([Ch._cmd[4], Ch._cmd[5]])
           if nCh == 0:
             cmd[4] = iCh
@@ -253,7 +253,10 @@ class MiniMaestro18:
   def deinit(self):
     """ Release the UART
     """
-    self._uart.deinit()
+    try:
+      self._uart.deinit()
+    except AttributeError:
+       pass  
     self.reset()
 
 # ----------------------------------------------------------------------------

@@ -9,9 +9,10 @@
 # 2018-09-21, v1
 # 2019-12-21, v1.1 - hardware I2C bus possible
 # 2020-08-09, v1.2 - `UART` is inherited from `machine`
+# 2020-10-09, v1.3 - `I2CBus` use with `with`-statement
 # ----------------------------------------------------------------------------
 from os import uname
-from machine import SPI, Pin, I2C
+from machine import SPI, Pin, I2C, SoftSPI
 from micropython import const
 from machine import UART
 
@@ -21,12 +22,17 @@ __version__ = "0.1.2.0"
 class SPIBus(object):
   """SPI bus access."""
 
-  def __init__(self, freq, sc, mo, mi=None, spidev=2):
-    self._spi = SPI(spidev)
-    if mi == None:
-      self._spi.init(baudrate=freq, sck=Pin(sc), mosi=Pin(mo))
+  def __init__(self, freq, sck, sdo, sdi=None, spidev=None):
+    _mi = Pin(sdi) if sdi else None
+    _mo = Pin(sdo)
+    _sc = Pin(sck)
+    if spidev:
+      self._spi = SPI(spidev)
+      self._spi.init(baudrate=freq, sck=_sc, mosi=_mo, miso=_mi)
+    elif spidev < 0:
+      self._spi = SoftSPI(sck=_sc, mosi=_mo, miso=_mi)
     else:
-      self._spi.init(baudrate=freq, sck=Pin(sc), mosi=Pin(mo), miso=Pin(mi))
+      self._spi = SPI(baudrate=freq, sck=_sc, mosi=_mo, miso=_mi)
 
   def deinit(self):
     self._spi.deinit()
@@ -45,24 +51,32 @@ class SPIBus(object):
 class I2CBus(object):
   """I2C bus access."""
 
-  def __init__(self, _freq, scl, sda, code=-1):
+  def __init__(self, **kwargs):
     self._i2cDevList = []
-    v = float(uname()[2][:4])
-    if not code in [-1,0,1] or v < 1.12:
+    freq = 0
+    do_scan = False if not "scan" in kwargs else kwargs["scan"]
+    code = 0 if not "code" in kwargs else kwargs["code"]
+    freq = 400000 if not "freq" in kwargs else kwargs["freq"]
+    scl = kwargs["scl"]
+    sda = kwargs["sda"]
+    if not code in [-1,0,1] or float(uname()[2][:4]) < 1.12:
       # Defaults to software implementation of I2C
-      self._i2c = I2C(scl=Pin(scl), sda=Pin(sda), freq=_freq)
+      self._i2c = I2C(scl=Pin(scl), sda=Pin(sda), freq=freq)
       self._isSoft = True
       codeStr = "Software"
     else:
       # User selected -1=software or 0,1=hardware implementation of I2C
-      self._i2c = I2C(code, scl=Pin(scl), sda=Pin(sda), freq=_freq)
+      self._i2c = I2C(code, scl=Pin(scl), sda=Pin(sda), freq=freq)
       self._isSoft = True if code == -1 else False
       codeStr = "Software" if self._isSoft else "Hardware #{0}".format(code)
-    print("{0} I2C bus frequency is {1} kHz".format(codeStr, _freq/1000))
-    print("Scanning I2C bus ...")
-    self._i2cDevList = self._i2c.scan()
-    print("... {0} device(s) found ({1})"
-          .format(len(self._i2cDevList), self._i2cDevList))
+
+    s = " frequency is {0} kHz".format(freq/1000) if freq > 0 else ""
+    print("{0} I2C bus {1}".format(codeStr, s))
+    if do_scan:
+      print("Scanning I2C bus ...")
+      self._i2cDevList = self._i2c.scan()
+      print("... {0} device(s) found ({1})"
+            .format(len(self._i2cDevList), self._i2cDevList))
 
   def deinit(self):
     self._i2c = None
@@ -76,14 +90,15 @@ class I2CBus(object):
     return self._i2cDevList
 
   def start(self):
-    if self._isSoft:
-      self._i2c.start()
+    assert self._isSoft, "SoftI2C expected"
+    self._i2c.start()
 
   def stop(self):
-    if self._isSoft:
-      self._i2c.stop()
+    assert self._isSoft, "SoftI2C expected"
+    self._i2c.stop()
 
   def write(self, buf):
+    assert self._isSoft, "SoftI2C expected"
     self._i2c.write(buf)
 
   def writeto(self, addr, buf, stop_=True):
@@ -104,5 +119,11 @@ class I2CBus(object):
     buf = bytearray(bufi[in_start:in_end])
     self._i2c.readfrom_into(addr, buf)
     bufi[in_start:in_end] = buf
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    return False
 
 # ----------------------------------------------------------------------------

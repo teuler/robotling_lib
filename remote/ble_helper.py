@@ -5,7 +5,7 @@
 # Gait class
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-21 Thomas Euler
 # 2020-08-16, First version
 #
 # ----------------------------------------------------------------------------

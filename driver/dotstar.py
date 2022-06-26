@@ -35,13 +35,12 @@
 # ----------------------------------------------------------------------------
 import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
+if platform.languageID == platform.LNG_MICROPYTHON:
   import robotling_lib.platform.esp32.dio as dio
   import robotling_lib.platform.esp32.busio as busio
-elif platform.ID == platform.ENV_CPY_SAM51:
-  import robotling_lib.platform.m4ex.dio as dio
-  import robotling_lib.platform.m4ex.busio as busio
+elif platform.languageID == platform.LNG_CIRCUITPYTHON:
+  import robotling_lib.platform.circuitpython.dio as dio
+  import robotling_lib.platform.circuitpython.busio as busio
 else:
   print("ERROR: No matching hardware libraries in `platform`.")
 
@@ -116,7 +115,7 @@ class DotStar:
     self.brightness = brightness
     self.auto_write = auto_write
 
-    t = "6x12 DotStar ({0})". format("software" if self._spi == None else "spi")
+    t = "{0}-pixel DotStar ({0})".format(n, "spi" if self._spi else "software")
     print(ansi.GREEN +"[{0:>12}] {1:35} ({2}): ok"
           .format(CHIP_NAME, t, __version__) +ansi.BLACK)
 
@@ -247,7 +246,7 @@ class DotStar:
       self.show()
     self.auto_write = auto_write
 
-  def getColorFromWheel(self, iWheel):
+  def get_color_from_wheel(self, iWheel):
     """ Get an RGB color from a wheel-like color representation
     """
     iWheel = iWheel % 255

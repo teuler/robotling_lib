@@ -35,15 +35,17 @@ from robotling_lib.misc.helpers import timed_function
 from micropython import const
 import errno
 
+import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.platform.platform import platform
 if platform.ID == platform.ENV_ESP32_UPY:
   from robotling_lib.platform.esp32.register import i2c_bit, i2c_bits
 elif platform.ID == platform.ENV_CPY_SAM51:
-  from robotling_lib.platform.m4ex.circuitpython.register import i2c_bit, i2c_bits
+  from robotling_lib.platform.m4ex.circuitpython.register \
+    import i2c_bit, i2c_bits
 else:
-  print("ERROR: No matching hardware libraries in `platform`.")
+  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__ = "0.1.0.0"
+__version__ = "0.1.1.0"
 CHIP_NAME   = "amg88xx"
 CHAN_COUNT  = const(64)
 
@@ -137,8 +139,8 @@ class AMG88XX:
   def __init__(self, i2c):
     """ Requires already initialized I2C bus instance.
     """
-    self._i2c = i2c
-    self._i2cAddr = _AMG88XX_ADDRESS
+    self._i2c_device = i2c
+    self._i2c_addr = _AMG88XX_ADDRESS
     self._isReady = False
     self._imgData = bytearray(_PIXEL_ARRAY_WIDTH *_PIXEL_ARRAY_HEIGHT)
 
@@ -154,9 +156,10 @@ class AMG88XX:
       if ex.args[0] == errno.ENODEV:
         pass
 
-    print("[{0:>12}] {1:35} ({2}): {3}"
+    c = ansi.GREEN if self._isReady else ansi.RED
+    print(c +"[{0:>12}] {1:35} ({2}): {3}"
           .format(CHIP_NAME, "GRID-Eye IR 8x8 thermal camera", __version__,
-                  "ok" if self._isReady else "NOT FOUND"))
+                  "ok" if self._isReady else "NOT FOUND") +ansi.BLACK)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @property
@@ -181,8 +184,9 @@ class AMG88XX:
       for col in range(0, _PIXEL_ARRAY_WIDTH):
         i = row *_PIXEL_ARRAY_HEIGHT +col
         pos[0] = _PIXEL_OFFSET +(i << 1)
-        self._i2c.writeto(_AMG88XX_ADDRESS, pos, stop_=False)
-        self._i2c.readfrom_into(_AMG88XX_ADDRESS, buf)
+        with self._i2c_device as i2c:
+          i2c.writeto(_AMG88XX_ADDRESS, pos, stop_=False)
+          i2c.readfrom_into(_AMG88XX_ADDRESS, buf)
         raw = (buf[1] << 8) | buf[0]
         retbuf[row][col] = _twos_comp_to_float(raw) *_PIXEL_TEMP_CONVERSION
     return retbuf
@@ -199,8 +203,9 @@ class AMG88XX:
     buf = bytearray(npx)
     pos = bytearray(1)
     pos[0] = _PIXEL_OFFSET
-    self._i2c.writeto(_AMG88XX_ADDRESS, pos, stop_=False)
-    self._i2c.readfrom_into(_AMG88XX_ADDRESS, buf)
+    with self._i2c_device as i2c:
+      i2c.writeto(_AMG88XX_ADDRESS, pos, stop_=False)
+      i2c.readfrom_into(_AMG88XX_ADDRESS, buf)
 
     for i in range(0, npx, 2):
       raw = (buf[i+1] << 8) | buf[i]
@@ -210,11 +215,11 @@ class AMG88XX:
     return self._imgData
 
   @property
-  def isReady(self):
+  def is_ready(self):
     return self._isReady
 
   @property
-  def channelCount(self):
+  def channel_count(self):
     return _PIXEL_ARRAY_WIDTH *_PIXEL_ARRAY_HEIGHT
 
   @property

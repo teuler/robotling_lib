@@ -1,25 +1,8 @@
-# The MIT License (MIT)
+# SPDX-FileCopyrightText: 2017 Scott Shawcroft for Adafruit Industries
 #
-# Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
+# SPDX-License-Identifier: MIT
 # pylint: disable=too-few-public-methods
+
 """
 `adafruit_register.i2c_struct_array`
 ====================================================
@@ -34,6 +17,7 @@ import struct
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_Register.git"
 
+
 class _BoundStructArray:
     """
     Array object that `StructArray` constructs on demand.
@@ -43,6 +27,7 @@ class _BoundStructArray:
     :param type struct_format: The struct format string for each register element
     :param int count: Number of elements in the array
     """
+
     def __init__(self, obj, register_address, struct_format, count):
         self.format = struct_format
         self.first_register = register_address
@@ -63,8 +48,7 @@ class _BoundStructArray:
     def __getitem__(self, index):
         buf = self._get_buffer(index)
         with self.obj.i2c_device as i2c:
-            i2c.write_then_readinto(buf, buf,
-                                    out_end=1, in_start=1)
+            i2c.write_then_readinto(buf, buf, out_end=1, in_start=1)
         return struct.unpack_from(self.format, buf, 1)  # offset=1
 
     def __setitem__(self, index, value):
@@ -75,6 +59,7 @@ class _BoundStructArray:
 
     def __len__(self):
         return self.count
+
 
 class StructArray:
     """
@@ -92,6 +77,7 @@ class StructArray:
     :param str struct_format: The struct format string for this register.
     :param int count: Number of elements in the array
     """
+
     def __init__(self, register_address, struct_format, count):
         self.format = struct_format
         self.address = register_address
@@ -104,6 +90,9 @@ class StructArray:
         # initializer and then cached on the object itself. That way its lifetime is tied to the
         # lifetime of the object itself.
         if not hasattr(obj, self.array_id):
-            setattr(obj, self.array_id,
-                    _BoundStructArray(obj, self.address, self.format, self.count))
+            setattr(
+                obj,
+                self.array_id,
+                _BoundStructArray(obj, self.address, self.format, self.count),
+            )
         return getattr(obj, self.array_id)

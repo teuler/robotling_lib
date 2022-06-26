@@ -2,15 +2,17 @@
 # neopixel.py
 #
 # Basic NeoPixel support
-# (for CircuitPython, M4 express)
+# (for CircuitPython)
 #
 # The MIT License (MIT)
-# Copyright (c) 2018 Thomas Euler
+# Copyright (c) 2018-2020 Thomas Euler
 # 2018-09-26, v1
+# 2020-10-31, v1.1, generally CircuitPython
 # ----------------------------------------------------------------------------
-from platform.m4ex.circuitpython.neopixel import NeoPixel as NeoPixelBase
+from robotling_lib.platform.circuitpython.other.neopixel \
+  import NeoPixel as NeoPixelBase
 
-__version__ = "0.1.0.0"
+__version__ = "0.1.1.0"
 
 # ----------------------------------------------------------------------------
 class NeoPixel(NeoPixelBase):

@@ -43,6 +43,7 @@ class ServoManager(object):
   TYPE_HORIZONTAL = const(1)
   TYPE_VERTICAL   = const(2)
   TYPE_SENSOR     = const(3)
+  # pylint: enable=bad-whitespace
 
   TRJ_LINEAR      = const(0)
   TRJ_SINE        = const(1)

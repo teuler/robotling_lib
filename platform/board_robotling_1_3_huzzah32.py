@@ -3,8 +3,9 @@
 # Pins and devices on `robotling" board, version 1.3
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-21 Thomas Euler
 # 2020-08-01, v1
+# 2021-09-23, v1.1, MISO -> SDI, MOSI -> SDO
 # ----------------------------------------------------------------------------
 from micropython import const
 import robotling_lib.platform.esp32.board_huzzah32 as board
@@ -12,8 +13,8 @@ import robotling_lib.platform.esp32.board_huzzah32 as board
 # pylint: disable=bad-whitespace
 # SPI -----------------
 SCK        = board.SCK
-MOSI       = board.MOSI
-MISO       = board.MISO
+SDO        = board.SDO
+SDI        = board.SDI
 CS_ADC     = board.D4
 
 # I2C -----------------
@@ -42,6 +43,7 @@ DIO3       = board.D32
 ENAB_5V    = board.D16
 RED_LED    = board.LED
 ADC_BAT    = board.BAT
+DS_CLOCK   = None
 
 # Note 1: The ESP32 MicroPython port currently supports only one frequency
 # for all PWM objects. Servos usually expect 50 Hz, but to run the DC motors

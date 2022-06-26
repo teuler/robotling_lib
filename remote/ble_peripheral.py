@@ -43,8 +43,8 @@ class BLESimplePeripheral:
     self._ble = ble
     self._ble.active(True)
     self._ble.config(rxbuf=max_msg_size)
-    self._mac = bhlp.format_mac(self._ble.config("mac"))
-    self._ble.irq(handler=self._irq)
+    self._mac = bhlp.format_mac(self._ble.config("mac")[1])
+    self._ble.irq(self._irq)
     res = self._ble.gatts_register_services((_UART_SERVICE,))
     self._handle_tx = res[0][0]
     self._handle_rx = res[0][1]
@@ -62,7 +62,7 @@ class BLESimplePeripheral:
   def deinit(self):
     if self._ble is not None:
       self._advertise(None)
-      self._ble.irq(handler=None)
+      self._ble.irq(None)
       self._ble.active(False)
       self._isReady == False
 

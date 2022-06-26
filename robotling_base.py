@@ -4,26 +4,48 @@
 # all functions and properties of a specific board
 #
 # The MIT License (MIT)
-# Copyright (c) 2020 Thomas Euler
+# Copyright (c) 2020-22 Thomas Euler
 # 2020-09-04, v1
+# 2020-10-31, v1.1, use `languageID` instead of `ID`
+# 2020-12-21, v1.2, moved all RGB pixel management here
+# 2022-01-02, v1.3, Nano RP2040 Connect added, memory functions refined
 # ----------------------------------------------------------------------------
+import gc
+import array
 from micropython import const
 from robotling_lib.misc.helpers import TimeTracker
+import robotling_lib.misc.ansi_color as ansi
+import robotling_lib.robotling_board as rb
+from robotling_lib.misc.color_wheel import getColorFromWheel
 
-from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
+from robotling_lib.platform.platform import platform as pf
+if pf.languageID == pf.LNG_MICROPYTHON:
   import time
-elif platform.ID == platform.ENV_CPY_SAM51:
-  import robotling_lib.platform.m4ex.time as time
+  from machine import Pin
+  if pf.isRP2:
+    import robotling_lib.platform.rp2.dio as dio
+    from robotling_lib.platform.rp2 import busio
+  else:
+    import robotling_lib.platform.esp32.dio as dio
+    from robotling_lib.platform.esp32 import busio
+elif pf.languageID == pf.LNG_CIRCUITPYTHON:
+  import robotling_lib.platform.circuitpython.time as time
+  from robotling_lib.platform.circuitpython import busio
+  import robotling_lib.platform.circuitpython.dio as dio
 else:
-  print("ERROR: No matching hardware libraries in `platform`.")
+  print(ansi.RED +"ERROR: No matching libraries in `platform`." +ansi.BLACK)
 
-__version__      = "0.1.0.0"
+# pylint: disable=bad-whitespace
+__version__     = "0.1.3.0"
+# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class RobotlingBase(object):
   """Robotling base class.
+
+  Objects:
+  -------
+  - onboardLED     : on(), off()
 
   Methods:
   -------
@@ -39,18 +61,34 @@ class RobotlingBase(object):
   - spin_while_moving(t_spin_ms=50)
     Call spin frequently while waiting for the current move to finish
 
+  - startPulsePixel()
+    Set color of RGB pixel and enable pulsing
+
+  - printReport()
+    Print statistics of the last run into the history
   - powerDown()
     To be called when the robot shuts down; to be overwritten
 
   Properties:
   ----------
   - memory         : Returns allocated and free memory as tuple
+  - PixelRGB       : get and set color (r,g,b tuple or color wheel index)
+  - dotStarPower   : Turns power to DotStar LED, if any, on or off
+
+  Internal objects:
+  ----------------
+  - _MCP3208       : 8-channel 12-bit A/C converter driver
+
+  Internal methods:
+  ----------------
+  - _pulsePixel()
+    Update pulsing, if enabled
   """
   MIN_UPDATE_PERIOD_MS = const(20)  # Minimal time between update() calls
   APPROX_UPDATE_DUR_MS = const(8)   # Approx. duration of the update/callback
-  HEARTBEAT_STEP_SIZE  = const(5)   # Step size for pulsing NeoPixel
+  HEARTBEAT_STEPS      = const(10)  # Number of steps for RGB pixel pulsing
 
-  def __init__(self):
+  def __init__(self, neoPixel=False, MCP3208=False):
     """ Initialize spin management
     """
     # Get the current time in seconds
@@ -58,33 +96,117 @@ class RobotlingBase(object):
     self._start_s = time.time()
 
     # Initialize some variables
-    self.ID = platform.GUID
-    self.Tele = None
+    self._ID = pf.GUID
+    self._Tele = None
+    self._MCP3208 = None
+    self._Pix_enablePulse = False
+    self.onboardLED = None
+    self._NPx = None
+    self._DS = None
+    self._collect()
+
+    if MCP3208:
+      # Initialize analog sensor driver
+      from robotling_lib.driver import mcp3208
+      dev = None if pf.ID == pf.ENV_ESP32_S2 else 1
+      dev = 0 if pf.isRP2 else dev
+      self._SPI = busio.SPIBus(rb.SPI_FRQ, rb.SCK, rb.SDO, rb.SDI, spidev=dev)
+      self._MCP3208 = mcp3208.MCP3208(self._SPI, rb.CS_ADC)
+
+    # RGB Pixel management
+    if neoPixel:
+      # Initialize Neopixel (connector)
+      if pf.languageID == pf.LNG_MICROPYTHON:
+        if pf.isRP2:
+          from robotling_lib.platform.rp2.neopixel import NeoPixel
+        else:
+          from robotling_lib.platform.esp32.neopixel import NeoPixel
+      elif pf.languageID == pf.LNG_CIRCUITPYTHON:
+        from robotling_lib.platform.circuitpython.neopixel import NeoPixel
+      self._NPx = NeoPixel(rb.NEOPIX, 1)
+      self._NPx.set((0,0,0), 0, True)
+      s = "[{0:>12}] {1:35}".format("Neopixel", "ready")
+      print(ansi.GREEN +s +ansi.BLACK)
+    if rb.DS_CLOCK:
+      # Initialize onboard RGB LED, if present
+      from robotling_lib.driver.dotstar import DotStar
+      self._stateDS = True
+      self.dotStarPower = self._stateDS
+      self._DS = DotStar(rb.DS_CLOCK, rb.DS_DATA, 1, brightness=0.5)
+      self._DS[0] = 0
+    if self._DS or self._NPx:
+      # Initialize pulse management
+      self._Pix_enablePulse = True
+      self._Pix_iColor = 0
+      self._Pix_RGB = bytearray([0]*3)
+      self._Pix_curr = array.array("i", [0,0,0])
+      self._Pix_step = array.array("i", [0,0,0])
+      self._Pix_fact = 1.0
+      self._Pix_pulse = False
+      self.PixelRGB = 0
+
+    # Initialize on-board (feather) hardware
+    if rb.RED_LED:
+      self.onboardLED = dio.DigitalOut(rb.RED_LED)
 
     # Initialize spin function-related variables
     self._spin_period_ms = 0
     self._spin_t_last_ms = 0
     self._spin_callback = None
     self._spinTracker = TimeTracker()
+    self._collect()
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  def _collect(self):
+    gc.collect()
+
   @property
   def memory(self):
-    import gc
-    gc.collect()
     return (gc.mem_alloc(), gc.mem_free())
+
+  @property
+  def ID(self):
+    return self._ID
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   def powerDown(self):
     """ Record run time
     """
+    if self._NPx:
+      self._NPx.set((0,0,0), 0, True)
+    if self._DS:
+      self._DS[0] = 0
+      self.dotStarPower = False
     self._run_duration_s = time.time() -self._start_s
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  @property
+  def dotStarPower(self):
+    return self._stateDS
+
+  @dotStarPower.setter
+  def dotStarPower(self, state):
+    if not rb.DS_POWER:
+      return
+    if state:
+      Pin(rb.DS_POWER, Pin.OUT, None)
+      Pin(rb.DS_POWER).value(False)
+    else:
+      Pin(rb.DS_POWER, Pin.IN, Pin.PULL_HOLD)
+    Pin(rb.DS_CLOCK, Pin.OUT if state else Pin.IN)
+    Pin(rb.DS_DATA, Pin.OUT if state else Pin.IN)
+    time.sleep_ms(35)
+    self._stateDS = state
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   def updateStart(self):
     """ To be called at the beginning of the update function
     """
     self._spinTracker.reset()
+    if self._MCP3208:
+      self._MCP3208.update()
+    if self._Pix_enablePulse:
+      self._pulsePixel()
 
   def updateEnd(self):
     """ To be called at the end of the update function
@@ -157,7 +279,8 @@ class RobotlingBase(object):
   def connectToWLAN(self):
     """ Connect to WLAN if not already connected
     """
-    if platform.ID in [platform.ENV_ESP32_UPY, platform.ENV_ESP32_TINYPICO]:
+    if pf.ID in [pf.ENV_ESP32_UPY, pf.ENV_ESP32_TINYPICO, pf.ENV_ESP32_S2,
+                 pf.ENV_MPY_RP2_NANOCONNECT]:
       import network
       from NETWORK import my_ssid, my_wp2_pwd
       if not network.WLAN(network.STA_IF).isconnected():
@@ -167,9 +290,9 @@ class RobotlingBase(object):
           sta_if.active(True)
           sta_if.connect(my_ssid, my_wp2_pwd)
           while not sta_if.isconnected():
-            self.greenLED.on()
+            self.onboardLED.on()
             time.sleep(0.05)
-            self.greenLED.off()
+            self.onboardLED.off()
             time.sleep(0.05)
           print("[{0:>12}] {1}".format("network", sta_if.ifconfig()))
 
@@ -177,13 +300,108 @@ class RobotlingBase(object):
   def printReport(self):
     """ Prints a report on memory usage and performance
     """
-    used, free = self.memory
-    total = free +used
-    print("Memory     : {0:.0f}% of {1:.0f}kB heap RAM used."
-          .format(used/total*100, total/1024))
+    self.printMemory(report=True)
     avg_ms = self._spinTracker.meanDuration_ms
     dur_ms = self._spinTracker.period_ms
     print("Performance: spin: {0:6.3f}ms @ {1:.1f}Hz ~{2:.0f}%"
           .format(avg_ms, 1000/dur_ms, avg_ms /dur_ms *100))
+
+  def printMemory(self, do_collect=False, report=False, as_str=False):
+    """ Prints just the information about memory usage
+    """
+    used, free = self.memory
+    total = free +used
+    if do_collect:
+      self._collect()
+      used, free1 = self.memory
+      freed = free1 -free
+    usedp = used /total *100
+    tot_kb = total /1024
+    s1 = "Memory     : " if report else ""
+    s2 = "" if not(do_collect) else " ({0} bytes freed)".format(freed)
+    s3 = "{0}{1:.0f}% of {2:.0f}kB RAM used{3}.".format(s1, usedp, tot_kb, s2)
+    if not(as_str):
+      print(s3)
+    else:
+      return s3
+
+  def collectMemory(self):
+    return self.printMemory(True, False, True)
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  @property
+  def PixelRGB(self):
+    return self._Pix_RGB
+
+  @PixelRGB.setter
+  def PixelRGB(self, value):
+    """ Set color of RGB LEDs ("Pixel") by assigning a RGB value or a color
+        wheel index (and stop pulsing, if running)
+    """
+    try:
+      rgb = bytearray([value[0], value[1], value[2]])
+    except TypeError:
+      rgb = getColorFromWheel(value)
+    if self._NPx:
+      self._NPx.set(rgb, 0, True)
+    if self._DS:
+      self._DS[0] = self._Pix_curr
+      self._DS.show()
+    self._Pix_pulse = False
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  def startPulsePixel(self, value):
+    """ Set color of RGB LEDs and enable pulsing
+    """
+    iColPrev = self._Pix_iColor
+    if self._Pix_enablePulse:
+      try:
+        rgb = bytearray([value[0], value[1], value[2]])
+      except TypeError:
+        rgb = getColorFromWheel(value)
+        self._Pix_iColor = value
+
+      if (rgb != self._Pix_RGB) or not(self._Pix_pulse):
+        # New color and start pulsing
+        c = self._Pix_curr
+        s = self._Pix_step
+        c[0] = rgb[0]
+        s[0] = int(rgb[0] /self.HEARTBEAT_STEPS)
+        c[1] = rgb[1]
+        s[1] = int(rgb[1] /self.HEARTBEAT_STEPS)
+        c[2] = rgb[2]
+        s[2] = int(rgb[2] /self.HEARTBEAT_STEPS)
+        self._Pix_RGB = rgb
+        if self._NPx:
+          self._NPx.set(rgb, 0, True)
+        if self._DS:
+          self._DS[0] = self._Pix_curr
+          self._DS.show()
+        self._Pix_pulse = True
+        self._Pix_fact = 1.0
+    return iColPrev
+
+  def dimPixel(self, factor=1.0):
+    self._Pix_fact = max(min(1, factor), 0)
+
+  def _pulsePixel(self):
+    """ Update pulsing, if enabled
+    """
+    if self._Pix_pulse:
+      rgb = self._Pix_RGB
+      for i in range(3):
+        self._Pix_curr[i] += self._Pix_step[i]
+        if self._Pix_curr[i] > (rgb[i] -self._Pix_step[i]):
+          self._Pix_step[i] *= -1
+        if self._Pix_curr[i] < abs(self._Pix_step[i]):
+          self._Pix_step[i] = abs(self._Pix_step[i])
+        if self._Pix_fact < 1.0:
+          self._Pix_curr[i] = int(self._Pix_curr[i] *self._Pix_fact)
+        self._Pix_curr[i] = min(self._Pix_curr[i], 255)
+      if self._NPx:
+        self._NPx.set(self._Pix_curr, 0, True)
+      if self._DS:
+        self._DS[0] = self._Pix_curr
+        self._DS.show()
 
 # ----------------------------------------------------------------------------

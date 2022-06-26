@@ -1,31 +1,42 @@
-"""
-MicroPython SSD1327 OLED I2C driver
-https://github.com/mcauser/micropython-ssd1327
-
-MIT License
-Copyright (c) 2017 Mike Causer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
+# ----------------------------------------------------------------------------
+# sdd1327.py
+# Class for SSD1327 OLED display (I2C)
+#
+# The MIT License (MIT)
+# Copyright (c) 2020 Thomas Euler
+# 2020-10-03, v1
+#
+# Based on the MicroPython SSD1327 OLED I2C driver
+# https://github.com/mcauser/micropython-ssd1327
+#
+# MIT License
+# Copyright (c) 2017 Mike Causer
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 # ----------------------------------------------------------------------------
 from micropython import const
-from framebuf import FrameBuffer, GS4_HMSB
+import robotling_lib.misc.ansi_color as ansi
+from robotling_lib.platform.platform import platform
+if platform.languageID == platform.LNG_MICROPYTHON:
+  from framebuf import FrameBuffer, GS4_HMSB
+else:
+  print(ansi.RED +"ERROR: This is a MicroPython-only library." +ansi.BLACK)
 
 __version__ = "0.1.0.0"
 CHIP_NAME   = "ssd1327"
@@ -35,16 +46,19 @@ _ADDR_SSD1327         = const(0x3C)
 
 # Commands
 SET_COL_ADDR          = const(0x15)
-SET_SCROLL_DEACTIVATE = const(0x2E)
+SET_SCROLL_DISABLE    = const(0x2E)
+SET_SCROLL_ENABLE     = const(0x2F)
 SET_ROW_ADDR          = const(0x75)
 SET_CONTRAST          = const(0x81)
 SET_SEG_REMAP         = const(0xA0)
 SET_DISP_START_LINE   = const(0xA1)
 SET_DISP_OFFSET       = const(0xA2)
-SET_DISP_MODE         = const(0xA4) # 0xA4 normal, 0xA5 all on, 0xA6 all off, 0xA7 when inverted
+# 0xA4 normal, 0xA5 all on, 0xA6 all off, 0xA7 when inverted
+SET_DISP_MODE         = const(0xA4)
 SET_MUX_RATIO         = const(0xA8)
 SET_FN_SELECT_A       = const(0xAB)
-SET_DISP              = const(0xAE) # 0xAE power off, 0xAF power on
+# 0xAE power off, 0xAF power on
+SET_DISP              = const(0xAE)
 SET_PHASE_LEN         = const(0xB1)
 SET_DISP_CLK_DIV      = const(0xB3)
 SET_SECOND_PRECHARGE  = const(0xB6)
@@ -62,17 +76,21 @@ REG_DATA              = const(0x40)
 
 # ----------------------------------------------------------------------------
 class SSD1327:
-  def __init__(self, width, height, external_vcc, buf):
+  """SSD1327 driver (base class)"""
+
+  def __init__(self, width, height, external_vcc):
     self._width = width
     self._height = height
     self._external_vcc = external_vcc
-    if not buf:
-      self._buffer = bytearray(self._width *self._height //2)
-    else:
-      self._buffer = buf
-    self._framebuf = FrameBuffer(self._buffer, width, height, GS4_HMSB)
+    self._buffer = bytearray(width *height //2 +1)
+    self._buffer[0] = REG_DATA
+    self._bufview = memoryview(self._buffer)
+    self._framebuf = FrameBuffer(self._bufview[1:], width, height, GS4_HMSB)
     self.isReady = True
-    self.poweron()
+    self._tCol = 15
+    self._bCol = 0
+    self._tyPos = 0
+    self.power_on()
     self.__init_display()
 
   def __init_display(self):
@@ -116,18 +134,20 @@ class SSD1327:
     self.fill(0)
     self.show()
 
-  def deinit(self):
+  def deinit(self, power=False):
+    if not power:
+      self.power_off()
     self._framebuf = None
     self._buffer = None
     self.isReady = False
 
-  def poweroff(self):
+  def power_off(self):
     if self.isReady:
       self.__write_cmd(SET_FN_SELECT_A)
       self.__write_cmd(0x00) # Disable internal VDD regulator, to save power
       self.__write_cmd(SET_DISP)
 
-  def poweron(self):
+  def power_on(self):
     if self.isReady:
       self.__write_cmd(SET_FN_SELECT_A)
       self.__write_cmd(0x01) # Enable internal VDD regulator
@@ -156,6 +176,8 @@ class SSD1327:
   def fill(self, col):
     if self.isReady:
       self._framebuf.fill(col)
+      self._tyPos = 0
+      self._bCol = col
 
   def pixel(self, x, y, col):
     if self.isReady:
@@ -170,25 +192,40 @@ class SSD1327:
     if self.isReady:
       self._framebuf.text(string, x, y, col)
 
+  def println(self, string, show=True):
+    if self.isReady:
+      y = self._tyPos
+      self._framebuf.text(string, 0, y, self._tCol)
+      if self._tyPos == self._height -8:
+        self._framebuf.scroll(0, -8)
+        self._framebuf.fill_rect(0, y, self._width-1, y +7, self._bCol)
+      else:
+        self._tyPos += 8
+      if show:
+        self.show()
+
+  def set_text_color(self, col):
+    self._tCol = col
+
+  def set_bkg_color(self, col):
+    self._bCol = col
+
 # ----------------------------------------------------------------------------
 class SSD1327_I2C(SSD1327):
-  def __init__(self, w, h, i2c, addr=_ADDR_SSD1327, ext_vcc=False, buf=None):
-    self._i2c = i2c
-    self._addr = addr
-    super().__init__(w, h, ext_vcc, buf)
+  """SSD1327 driver (I2C)"""
+
+  def __init__(self, w, h, i2c, addr=_ADDR_SSD1327, ext_vcc=False):
+    self.i2c_device = i2c
+    self._i2c_addr = addr
+    super().__init__(w, h, ext_vcc)
 
   def __write_cmd(self, cmd):
-    # Co=1, D/C#=0
-    temp = bytearray([REG_CMD, cmd])
-    self._i2c.writeto(self._addr, bytearray([REG_CMD, cmd]))
+    with self.i2c_device as i2c:
+      i2c.writeto(self._i2c_addr, bytearray([REG_CMD, cmd]))
 
   def __write_data(self, buf):
-    # Co=0, D/C#=1
-    temp = bytearray([self._addr << 1, REG_DATA])
-    self._i2c.start()
-    self._i2c.write(temp)
-    self._i2c.write(buf)
-    self._i2c.stop()
+    with self.i2c_device as i2c:
+      i2c.writeto(self._i2c_addr, buf)
 
   '''
   def rotate(self, rotate):

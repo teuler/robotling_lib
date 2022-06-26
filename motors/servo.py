@@ -79,7 +79,7 @@ class Servo(ServoBase):
       self._pwm.deinit()
     except:
       pass
-    
+
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   @timed_function
   def write_us_timed(self, t_us):
