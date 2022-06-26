@@ -17,6 +17,7 @@ except ImportError:
   import ustruct as struct
 from math import radians
 from micropython import const
+import robotling_lib.misc.ansi_color as ansi
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.sensors.sensor_base import SensorBase
 import robotling_lib.robotling_board as rb
@@ -84,14 +85,15 @@ class Compass(SensorBase):
       self._isReady = True
 
     cn =  "{0}_v{1}".format(CHIP_NAME, self._version)
-    print("[{0:>12}] {1:35} ({2}): {3}"
+    c = ansi.GREEN if self._isReady else ansi.RED
+    print(c +"[{0:>12}] {1:35} ({2}): {3}"
           .format(cn, self._type, __version__,
-                  "ok" if self._isReady else "FAILED"))
+                  "ok" if self._isReady else "NOT FOUND") +ansi.BLACK)
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   #@timed_function
   @micropython.native
-  def getHeading(self, tilt=False, calib=False, hires=True):
+  def get_heading(self, tilt=False, calib=False, hires=True):
     """ Returns heading with or w/o tilt compensation and/or calibration,
         if available.
         NOTE: The CMPS12 has built-in tilt compensation and is pre-calibra-
@@ -115,7 +117,7 @@ class Compass(SensorBase):
 
   #@timed_function
   @micropython.native
-  def getHeading3D(self, calib=False):
+  def get_heading_3d(self, calib=False):
     """ Returns heading, pitch and roll in [°] with or w/o calibration,
         if available.
         NOTE: The CMPS12 has built-in tilt compensation and is pre-calibra-
@@ -136,7 +138,7 @@ class Compass(SensorBase):
 
   #@timed_function
   @micropython.native
-  def getPitchRoll(self, radians=False):
+  def get_pitch_roll(self, radians=False):
     """ Returns error code, pitch and roll in [°] as a tuple
     """
     if not self._isReady:
@@ -153,11 +155,11 @@ class Compass(SensorBase):
 
 
   @property
-  def isReady(self):
+  def is_ready(self):
     return self._isReady
 
   @property
-  def channelCount(self):
+  def channel_count(self):
     return CHAN_COUNT
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

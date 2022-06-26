@@ -6,18 +6,15 @@
 # Copyright (c) 2018 Thomas Euler
 # 2020-09-20, v1
 # ----------------------------------------------------------------------------
-#from math import radians
-#from micropython import const
+from math import radians
 from robotling_lib.misc.helpers import timed_function
 from robotling_lib.sensors.sensor_base import SensorBase
-from robotling_lib.driver.bno055 import BNO055, _ADDRESS_BNO055
+from robotling_lib.driver.bno055 import BNO055, ADDRESS_BNO055
+import robotling_lib.misc.ansi_color as ansi
+import robotling_lib.robotling_board as rb
 
 __version__ = "0.1.0.0"
 CHIP_NAME   = "BNO055"
-
-# pylint: disable=bad-whitespace
-# ...
-# pylint: enable=bad-whitespace
 
 # ----------------------------------------------------------------------------
 class Compass(SensorBase):
@@ -29,104 +26,67 @@ class Compass(SensorBase):
     self._i2c = i2c
     self._BNO055 = None
     self._isReady = False
-    self._type = "Compass w/ tilt-compensation"
-    self._heading = 0.0
-    self._pitch = 0.0
-    self._roll = 0.0
     super().__init__(None, 0)
 
     addrList = self._i2c.deviceAddrList
-    if (_ADDRESS_BNO055 in addrList):
+    if (ADDRESS_BNO055 in addrList):
       # Initialize
       try:
-        self._BNO055 = BNO055(i2c, _ADDRESS_BNO055)
+        self._BNO055 = BNO055(i2c)
+        self._version = 1
+        self._type = "Compass w/ tilt-compensation"
         self._isReady = True
       except RuntimeError:
         pass
 
-    cn =  "{0}_v{1}".format(CHIP_NAME, self._version)
-    print("[{0:>12}] {1:35} ({2}): {3}"
+    c = ansi.GREEN if self._isReady else ansi.RED
+    cn = "{0}_v{1}".format(CHIP_NAME, self._version)
+    print(c +"[{0:>12}] {1:35} ({2}): {3}"
           .format(cn, self._type, __version__,
-                  "ok" if self._isReady else "FAILED"))
+                  "ok" if self._isReady else "FAILED") +ansi.BLACK)
 
-****
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  #@timed_function
-  @micropython.native
-  def getHeading(self, tilt=False, calib=False, hires=True):
+  def get_heading(self, tilt=False, calib=False, hires=True):
     """ Returns heading with or w/o tilt compensation and/or calibration,
         if available.
-        NOTE: The CMPS12 has built-in tilt compensation and is pre-calibra-
-        ted, therefore the parameters "tilt" and "calib" are only for
-        compatibility reasons and have no effect. With "hires"=True, the
-        precision is 3599/360°, otherwise 255/360°.
+        NOTE: The BNO055 has built-in tilt compensation and is pre-calibra-
+        ted, therefore the parameters `tilt` and `calib` are only for
+        compatibility reasons and have no effect; `hires` is ignored.
     """
     if not self._isReady:
       return rb.RBL_ERR_DEVICE_NOT_READY
-    hd = self._heading
-    if hires:
-      buf = bytearray(1)
-      self._read_bytes(_ADDRESS_CMPS12, _REG_BEARING_8BIT, buf)
-      hd  = buf[0]/255 *360
-    else:
-      buf = bytearray(2)
-      self._read_bytes(_ADDRESS_CMPS12, _REG_BEARING_16BIT_HB, buf)
-      hd  = ((buf[0] << 8) | buf[1]) /10
-    return hd
-
+    return self._BNO055.euler[0]
 
   #@timed_function
-  @micropython.native
-  def getHeading3D(self, calib=False):
+  def get_heading_3d(self, calib=False):
     """ Returns heading, pitch and roll in [°] with or w/o calibration,
         if available.
-        NOTE: The CMPS12 has built-in tilt compensation and is pre-calibra-
-        ted, therefore the parameter "calib" exists only for compatibility
+        NOTE: The BNO055 has built-in tilt compensation and is pre-calibra-
+        ted, therefore the parameter `calib` exists only for compatibility
         reasons and has no effect.
     """
     if not self._isReady:
       return (rb.RBL_ERR_DEVICE_NOT_READY, 0, 0, 0)
-    hd  = self._heading
-    pit = self._pitch
-    rol = self._roll
-    buf = bytearray(4)
-    self._read_bytes(_ADDRESS_CMPS12, _REG_BEARING_16BIT_HB, buf)
-    hd, pit, rol = struct.unpack_from('>Hbb', buf[0:4])
-    hd /= 10
+    hd, pit, rol = self._BNO055.euler
     return (rb.RBL_OK, hd, pit, rol)
 
-
-  #@timed_function
-  @micropython.native
-  def getPitchRoll(self, radians=False):
+  def get_pitch_roll(self, radians=False):
     """ Returns error code, pitch and roll in [°] as a tuple
     """
     if not self._isReady:
       return  (rb.RBL_ERR_DEVICE_NOT_READY, 0, 0)
-    pit = self._pitch
-    rol = self._roll
-    buf = bytearray(2)
-    self._read_bytes(_ADDRESS_CMPS12, _REG_PITCH_8BIT_ANGLE, buf)
-    pit, rol = struct.unpack_from('>bb', buf[0:2])
+    hd, pit, rol = self._BNO055.euler
     if radians:
       return (rb.RBL_OK, -1, radians(pit), radians(rol))
     else:
       return (rb.RBL_OK, -1, pit, rol)
 
-
   @property
-  def isReady(self):
+  def is_ready(self):
     return self._isReady
 
   @property
-  def channelCount(self):
+  def channel_count(self):
     return CHAN_COUNT
-
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  def _read_bytes(self, i2cAddr, regAddr, buf):
-    cmd    = bytearray(1)
-    cmd[0] = regAddr & 0xff
-    self._i2c.bus.writeto(i2cAddr, cmd, False)
-    self._i2c.bus.readfrom_into(i2cAddr, buf)
 
 # ----------------------------------------------------------------------------

@@ -9,12 +9,11 @@
 # ----------------------------------------------------------------------------
 import array
 
-from robotling_lib.platform.platform import platform
-if (platform.ID == platform.ENV_ESP32_UPY or
-    platform.ID == platform.ENV_ESP32_TINYPICO):
+from robotling_lib.platform.platform import platform as pf
+if pf.languageID == pf.LNG_MICROPYTHON:
   from time import ticks_us, ticks_diff
 else:
-  from robotling_lib.platform.m4ex.time import ticks_us, ticks_diff
+  from robotling_lib.platform.circuitpython.time import ticks_us, ticks_diff
 
 __version__ = "0.1.1.0"
 

@@ -15,8 +15,8 @@ class SensorBase(object):
 
   def __init__(self, driver, chan=0):
     self._driver = driver
-    if not driver == None:
-      self._chan = min(max(chan, 0), driver.channelCount-1)
+    if driver:
+      self._chan = min(max(chan, 0), driver.channel_count-1)
     else:
       self._chan = chan
     self._type = "n/a"
@@ -24,11 +24,11 @@ class SensorBase(object):
     self._autoUpdate = False
 
   @property
-  def autoUpdate(self):
+  def auto_update(self):
     return self._autoUpdate
 
-  @autoUpdate.setter
-  def autoUpdate(self, value):
+  @auto_update.setter
+  def auto_update(self, value):
     self._autoUpdate = value
 
   @property
